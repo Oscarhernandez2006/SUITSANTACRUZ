@@ -21,5 +21,9 @@ return Application::configure(basePath: dirname(__DIR__))
         ]);
     })
     ->withExceptions(function (Exceptions $exceptions): void {
-        //
+        // La API no tiene ruta "login"; fuerza respuestas JSON (401/403) en /api/*
+        // en vez de intentar redirigir a una ruta web inexistente.
+        $exceptions->shouldRenderJsonWhen(
+            fn ($request, \Throwable $e) => $request->is('api/*') || $request->expectsJson()
+        );
     })->create();
