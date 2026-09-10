@@ -19,6 +19,10 @@ return Application::configure(basePath: dirname(__DIR__))
         $middleware->validateCsrfTokens(except: [
             'api/*',
         ]);
+
+        // API sin ruta "login": no redirigir a invitados, así el middleware Auth
+        // no invoca route('login') (que provoca 500) y se responde 401 JSON.
+        $middleware->redirectGuestsTo(fn () => null);
     })
     ->withExceptions(function (Exceptions $exceptions): void {
         // La API no tiene ruta "login"; fuerza respuestas JSON (401/403) en /api/*
