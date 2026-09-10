@@ -32,7 +32,15 @@ export class Login implements OnInit, OnDestroy {
   activeSlide = signal(0);
   private intervalId: ReturnType<typeof setInterval> | null = null;
 
+  // --- Recuperación de contraseña (paso "olvidé mi contraseña") ---
+  forgotStep = signal(false);
+  forgotEmail = '';
+  forgotBusy = signal(false);
+  forgotError = signal('');
+  forgotSent = signal(false);
+
   readonly slides = [
+
     {
       type: 'tagline' as const,
     },
@@ -235,5 +243,44 @@ export class Login implements OnInit, OnDestroy {
     if (!/[0-9]/.test(event.key)) {
       event.preventDefault();
     }
+  }
+
+  /** Abre el panel de recuperación de contraseña. */
+  openForgot(event?: Event): void {
+    event?.preventDefault();
+    this.forgotStep.set(true);
+    this.forgotError.set('');
+    this.forgotSent.set(false);
+  }
+
+  /** Cierra el panel de recuperación de contraseña. */
+  closeForgot(): void {
+    if (this.forgotBusy()) return;
+    this.forgotStep.set(false);
+    this.forgotError.set('');
+    this.forgotSent.set(false);
+  }
+
+  /** Envía la solicitud de enlace de recuperación al backend. */
+  submitForgot(): void {
+    const email = (this.forgotEmail || '').trim();
+    if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+      this.forgotError.set('Ingresa un correo v\u00e1lido.');
+      return;
+    }
+
+    this.forgotBusy.set(true);
+    this.forgotError.set('');
+
+    this.authService.forgotPassword(email).subscribe({
+      next: () => {
+        this.forgotBusy.set(false);
+        this.forgotSent.set(true);
+      },
+      error: (err) => {
+        this.forgotBusy.set(false);
+        this.forgotError.set(err.error?.message || 'No pudimos procesar la solicitud. Intenta de nuevo.');
+      },
+    });
   }
 }

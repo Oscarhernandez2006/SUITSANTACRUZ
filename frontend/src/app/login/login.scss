@@ -793,3 +793,111 @@
   }
 }
 
+/* ---- Modal: recuperar contraseña ---- */
+.forgot {
+  &__overlay {
+    position: fixed;
+    inset: 0;
+    z-index: 110;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 1.5rem;
+    background: rgba(18, 25, 31, 0.72);
+    backdrop-filter: blur(4px);
+    animation: errorFadeIn 200ms ease-out;
+  }
+
+  &__card {
+    position: relative;
+    width: 100%;
+    max-width: 420px;
+    background: var(--color-white);
+    border-radius: 20px;
+    padding: 2rem 1.75rem 1.75rem;
+    box-shadow: 0 20px 60px rgba(0, 0, 0, 0.35);
+    border: 1px solid var(--color-border);
+    text-align: center;
+  }
+
+  &__close {
+    position: absolute;
+    top: 0.9rem;
+    right: 0.9rem;
+    display: grid;
+    place-items: center;
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    background: transparent;
+    color: var(--color-text-muted);
+    cursor: pointer;
+    transition: background var(--transition-fast), color var(--transition-fast);
+
+    .material-symbols-outlined { font-size: 20px; }
+
+    &:hover:not(:disabled) {
+      background: var(--color-surface);
+      color: var(--color-text-primary);
+    }
+    &:disabled { opacity: 0.5; cursor: not-allowed; }
+  }
+
+  &__icon-ring {
+    display: grid;
+    place-items: center;
+    width: 64px;
+    height: 64px;
+    margin: 0.5rem auto 1rem;
+    border-radius: 50%;
+    background: rgba(87, 173, 49, 0.1);
+    color: var(--color-accent);
+
+    &--success {
+      background: rgba(87, 173, 49, 0.14);
+    }
+  }
+
+  &__icon {
+    font-size: 34px;
+  }
+
+  &__title {
+    font-family: var(--font-heading);
+    font-size: 1.3rem;
+    font-weight: 700;
+    color: var(--color-text-primary);
+    letter-spacing: -0.02em;
+    margin: 0;
+  }
+
+  &__subtitle {
+    font-family: var(--font-body);
+    font-size: 0.85rem;
+    color: var(--color-text-secondary);
+    line-height: 1.5;
+    margin: 0.5rem 0 1.25rem;
+  }
+
+  &__form {
+    text-align: left;
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+  }
+
+  &__actions {
+    display: flex;
+    gap: 0.6rem;
+    justify-content: flex-end;
+    margin-top: 0.25rem;
+
+    .btn { flex: 1; }
+  }
+
+  &__done {
+    width: 100%;
+    margin-top: 0.25rem;
+  }
+}
+

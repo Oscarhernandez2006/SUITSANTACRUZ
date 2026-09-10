@@ -2,17 +2,25 @@
 
 namespace App\Http\Controllers;
 
+use App\Mail\PasswordResetMail;
 use App\Models\LoginLog;
 use App\Models\SiesaCredential;
 use App\Models\User;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Crypt;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\Mail;
+use Illuminate\Support\Str;
 
 class AuthController extends Controller
 {
+    /** Minutos de validez del enlace de recuperación de contraseña. */
+    private const RESET_TOKEN_TTL_MINUTES = 60;
+
     public function login(Request $request): JsonResponse
     {
         $request->validate([
@@ -303,6 +311,103 @@ class AuthController extends Controller
         $user->save();
 
         return response()->json(['message' => 'Contraseña actualizada correctamente']);
+    }
+
+    /**
+     * Paso 1 de la recuperación: el usuario ingresa su correo. Si existe una
+     * cuenta activa con ese email, se genera un token de un solo uso y se envía
+     * un enlace de restablecimiento. La respuesta es siempre genérica para no
+     * revelar qué correos están registrados (evita enumeración de usuarios).
+     */
+    public function forgotPassword(Request $request): JsonResponse
+    {
+        $validated = $request->validate([
+            'email' => 'required|email',
+        ]);
+
+        $genericMessage = 'Si el correo está registrado, te enviamos un enlace para restablecer tu contraseña.';
+
+        $email = mb_strtolower(trim($validated['email']));
+        $user = User::whereRaw('LOWER(email) = ?', [$email])->first();
+
+        // No revelamos si el correo existe o si la cuenta está inactiva.
+        if (!$user || !$user->is_active) {
+            return response()->json(['message' => $genericMessage]);
+        }
+
+        // Token en claro para el enlace; en la tabla se guarda solo su hash.
+        $token = Str::random(64);
+
+        DB::table('password_reset_tokens')->updateOrInsert(
+            ['email' => $user->email],
+            [
+                'token' => Hash::make($token),
+                'created_at' => Carbon::now(),
+            ]
+        );
+
+        $frontendUrl = rtrim((string) env('APP_FRONTEND_URL', config('app.url')), '/');
+        $resetUrl = $frontendUrl . '/restablecer?token=' . $token . '&email=' . urlencode($user->email);
+
+        try {
+            Mail::to($user->email)->send(
+                new PasswordResetMail($user->name, $resetUrl, self::RESET_TOKEN_TTL_MINUTES)
+            );
+        } catch (\Throwable $e) {
+            report($e);
+
+            return response()->json([
+                'message' => 'No pudimos enviar el correo en este momento. Intenta más tarde.',
+            ], 500);
+        }
+
+        return response()->json(['message' => $genericMessage]);
+    }
+
+    /**
+     * Paso 2 de la recuperación: valida el token recibido por correo y
+     * establece la nueva contraseña. El token se invalida tras usarse o vencer.
+     */
+    public function resetPassword(Request $request): JsonResponse
+    {
+        $validated = $request->validate([
+            'email' => 'required|email',
+            'token' => 'required|string',
+            'password' => 'required|string|min:6|confirmed',
+        ]);
+
+        $email = mb_strtolower(trim($validated['email']));
+        $user = User::whereRaw('LOWER(email) = ?', [$email])->first();
+
+        $record = $user
+            ? DB::table('password_reset_tokens')->where('email', $user->email)->first()
+            : null;
+
+        if (!$user || !$record || !Hash::check($validated['token'], $record->token)) {
+            return response()->json([
+                'message' => 'El enlace no es válido. Solicita uno nuevo.',
+            ], 422);
+        }
+
+        // ¿Expiró el token?
+        if (Carbon::parse($record->created_at)->addMinutes(self::RESET_TOKEN_TTL_MINUTES)->isPast()) {
+            DB::table('password_reset_tokens')->where('email', $user->email)->delete();
+
+            return response()->json([
+                'message' => 'El enlace expiró. Solicita uno nuevo.',
+            ], 422);
+        }
+
+        $user->password = $validated['password'];
+        $user->save();
+
+        // Un solo uso: se elimina el token y se cierran las sesiones activas.
+        DB::table('password_reset_tokens')->where('email', $user->email)->delete();
+        $user->tokens()->delete();
+
+        return response()->json([
+            'message' => 'Tu contraseña se actualizó. Ya puedes iniciar sesión.',
+        ]);
     }
 
     /** Historial de accesos del propio usuario (para /mi-perfil y /mi-actividad). */

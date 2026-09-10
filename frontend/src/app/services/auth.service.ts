@@ -142,6 +142,21 @@ export class AuthService {
     });
   }
 
+  /** Paso 1 de la recuperación: solicita el enlace de restablecimiento por correo. */
+  forgotPassword(email: string): Observable<{ message: string }> {
+    return this.http.post<{ message: string }>('/api/auth/forgot-password', { email });
+  }
+
+  /** Paso 2 de la recuperación: establece la nueva contraseña con el token del correo. */
+  resetPassword(email: string, token: string, newPassword: string): Observable<{ message: string }> {
+    return this.http.post<{ message: string }>('/api/auth/reset-password', {
+      email,
+      token,
+      password: newPassword,
+      password_confirmation: newPassword,
+    });
+  }
+
   /** Historial de accesos del propio usuario. */
   getMyLogins(limit = 50): Observable<LoginHistoryEntry[]> {
     return this.http.get<LoginHistoryEntry[]>('/api/auth/my-logins', { params: { limit } as never });

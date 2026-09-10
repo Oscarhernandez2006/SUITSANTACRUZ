@@ -119,7 +119,7 @@
             <input type="checkbox" />
             <span>Recordar sesi&#243;n</span>
           </label>
-          <a class="login__forgot" href="#">&#191;Olvidaste tu contrase&#241;a?</a>
+          <a class="login__forgot" href="#" (click)="openForgot($event)">&#191;Olvidaste tu contrase&#241;a?</a>
         </div>
 
         @if (errorMessage()) {
@@ -141,6 +141,83 @@
       </form>
     </div>
   </main>
+
+  @if (forgotStep()) {
+    <div class="forgot__overlay" (click)="closeForgot()">
+      <div class="forgot__card" (click)="$event.stopPropagation()">
+        <button type="button" class="forgot__close" (click)="closeForgot()" [disabled]="forgotBusy()">
+          <span class="material-symbols-outlined">close</span>
+        </button>
+
+        @if (!forgotSent()) {
+          <div class="forgot__icon-ring">
+            <span class="material-symbols-outlined forgot__icon">lock_reset</span>
+          </div>
+          <h3 class="forgot__title">Recuperar contrase&#241;a</h3>
+          <p class="forgot__subtitle">
+            Escribe el correo asociado a tu cuenta y te enviaremos un enlace para crear una nueva contrase&#241;a.
+          </p>
+
+          <form class="forgot__form" (ngSubmit)="submitForgot()">
+            <div class="login__field">
+              <label class="login__label" for="forgot-email">
+                <span class="material-symbols-outlined login__label-icon">mail</span>
+                Correo electr&#243;nico
+              </label>
+              <div class="login__input-wrapper">
+                <span class="material-symbols-outlined login__input-icon">alternate_email</span>
+                <input
+                  class="login__input"
+                  id="forgot-email"
+                  type="email"
+                  placeholder="tucorreo@grupo-santacruz.com"
+                  [(ngModel)]="forgotEmail"
+                  name="forgotEmail"
+                  autocomplete="email"
+                  autofocus
+                />
+              </div>
+            </div>
+
+            @if (forgotError()) {
+              <div class="login__error">
+                <span class="material-symbols-outlined login__error-icon">error</span>
+                {{ forgotError() }}
+              </div>
+            }
+
+            <div class="forgot__actions">
+              <button type="button" class="btn btn--ghost" (click)="closeForgot()" [disabled]="forgotBusy()">
+                Cancelar
+              </button>
+              <button type="submit" class="btn btn--primary" [disabled]="forgotBusy()">
+                @if (forgotBusy()) {
+                  <span class="login__spinner"></span>
+                  Enviando...
+                } @else {
+                  <span class="material-symbols-outlined">send</span>
+                  Enviar enlace
+                }
+              </button>
+            </div>
+          </form>
+        } @else {
+          <div class="forgot__icon-ring forgot__icon-ring--success">
+            <span class="material-symbols-outlined forgot__icon">mark_email_read</span>
+          </div>
+          <h3 class="forgot__title">Revisa tu correo</h3>
+          <p class="forgot__subtitle">
+            Si el correo est&#225; registrado, te enviamos un enlace para restablecer tu contrase&#241;a.
+            El enlace vence en 60 minutos.
+          </p>
+          <button type="button" class="btn btn--primary forgot__done" (click)="closeForgot()">
+            <span class="material-symbols-outlined">check</span>
+            Entendido
+          </button>
+        }
+      </div>
+    </div>
+  }
 
   @if (faceStep()) {
     <div class="face2fa__overlay">

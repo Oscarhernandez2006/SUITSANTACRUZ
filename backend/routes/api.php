@@ -24,6 +24,9 @@ use Illuminate\Support\Facades\Route;
 Route::post('/auth/login', [AuthController::class, 'login']);
 // Segundo paso del login: verificación facial (biometría 2FA).
 Route::post('/auth/login/face', [AuthController::class, 'loginFace']);
+// Recuperación de contraseña por correo (enlace de un solo uso).
+Route::post('/auth/forgot-password', [AuthController::class, 'forgotPassword']);
+Route::post('/auth/reset-password', [AuthController::class, 'resetPassword']);
 
 Route::get('/health', function () {
     return response()->json(['status' => 'ok', 'message' => 'Santa Cruz Suite API running']);

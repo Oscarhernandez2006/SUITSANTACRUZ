@@ -7,17 +7,20 @@
 @import url('https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&family=Sora:wght@500;600;700;800&display=swap');
 
 :root {
-  --color-primary: #12191F;
-  --color-primary-mid: #1E2D2F;
+  --color-primary: #101820;
+  --color-primary-mid: #1D2E30;
   --color-accent: #57AD31;
-  --color-accent-light: #7BC456;
-  --color-surface: #F0F4F2;
+  --color-accent-light: #7CC756;
+  --color-accent-dark: #3F851F;
+  --color-surface: #EEF3F0;
+  --color-surface-2: #E4ECE7;
   --color-canvas: #FAFCFB;
   --color-alert: #E8734A;
-  --color-text-primary: #12191F;
-  --color-text-secondary: #4A5568;
-  --color-text-muted: #8AA39A;
-  --color-border: #D5DDD9;
+  --color-text-primary: #101820;
+  --color-text-secondary: #46545F;
+  --color-text-muted: #86A096;
+  --color-border: #D7DFDA;
+  --color-border-strong: #C2CEC7;
   --color-white: #FFFFFF;
 
   --font-body: 'Manrope', 'Segoe UI', sans-serif;
@@ -28,10 +31,14 @@
   --radius-lg: 16px;
   --radius-xl: 24px;
 
-  --shadow-sm: 0 1px 3px rgba(18, 25, 31, 0.06);
-  --shadow-md: 0 4px 12px rgba(18, 25, 31, 0.08);
-  --shadow-lg: 0 8px 30px rgba(18, 25, 31, 0.12);
-  --shadow-xl: 0 16px 48px rgba(18, 25, 31, 0.16);
+  --shadow-sm: 0 1px 3px rgba(16, 24, 32, 0.06);
+  --shadow-md: 0 4px 14px rgba(16, 24, 32, 0.09);
+  --shadow-lg: 0 10px 32px rgba(16, 24, 32, 0.13);
+  --shadow-xl: 0 18px 50px rgba(16, 24, 32, 0.17);
+
+  /* ---- Gradientes reutilizables ---- */
+  --gradient-accent: linear-gradient(135deg, #71bf4c 0%, #57AD31 55%, #3F851F 100%);
+  --gradient-obsidian: linear-gradient(135deg, #101820 0%, #1D2E30 55%, #223F29 100%);
 
   --transition-fast: 150ms cubic-bezier(0.4, 0, 0.2, 1);
   --transition-base: 250ms cubic-bezier(0.4, 0, 0.2, 1);
@@ -47,17 +54,17 @@
   --space-8: 3rem;
 
   /* ---- Estados semánticos (derivados del verde oficial #57AD31) ---- */
-  --color-success: #57AD31;
-  --color-success-soft: rgba(87, 173, 49, 0.12);
-  --color-warning: #C98A1B;
-  --color-warning-soft: rgba(201, 138, 27, 0.14);
-  --color-danger: #C0392B;
-  --color-danger-soft: rgba(192, 57, 43, 0.10);
-  --color-info: #2F6DB5;
-  --color-info-soft: rgba(47, 109, 181, 0.12);
+  --color-success: #4E9E2C;
+  --color-success-soft: rgba(87, 173, 49, 0.13);
+  --color-warning: #C7871A;
+  --color-warning-soft: rgba(199, 135, 26, 0.15);
+  --color-danger: #C33C2E;
+  --color-danger-soft: rgba(195, 60, 46, 0.11);
+  --color-info: #2C6BB3;
+  --color-info-soft: rgba(44, 107, 179, 0.12);
 
   /* ---- Anillo de foco (verde oficial) ---- */
-  --ring-accent: 0 0 0 3px rgba(87, 173, 49, 0.18);
+  --ring-accent: 0 0 0 3px rgba(87, 173, 49, 0.2);
 }
 
 /* ---- Reset ---- */
@@ -77,8 +84,8 @@ body {
   font-family: var(--font-body);
   color: var(--color-text-primary);
   background:
-    radial-gradient(circle at 15% -10%, rgba(87, 173, 49, 0.08), transparent 32%),
-    radial-gradient(circle at 100% 0%, rgba(30, 45, 47, 0.09), transparent 28%),
+    radial-gradient(circle at 12% -10%, rgba(87, 173, 49, 0.09), transparent 34%),
+    radial-gradient(circle at 100% 0%, rgba(29, 46, 48, 0.10), transparent 30%),
     var(--color-canvas);
   line-height: 1.6;
   min-height: 100vh;
@@ -176,12 +183,12 @@ textarea {
 }
 
 .btn--primary {
-  background: linear-gradient(135deg, #71bf4c 0%, #57AD31 55%, #498f2a 100%);
+  background: var(--gradient-accent);
   color: var(--color-white);
 
   &:hover {
-    filter: brightness(1.03);
-    box-shadow: 0 8px 18px rgba(65, 128, 36, 0.28);
+    filter: brightness(1.04);
+    box-shadow: 0 8px 18px rgba(63, 133, 31, 0.3);
   }
 }
 
