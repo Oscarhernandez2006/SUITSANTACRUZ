@@ -10,10 +10,20 @@ import { PresenceService } from '../../services/presence.service';
   template: `
     <app-top-nav />
     <router-outlet />
+    @if (presence.status() === 'starting') {
+      <div class="presence-boot" role="status" aria-live="polite" aria-busy="true">
+        <div class="presence-boot__card">
+          <span class="presence-boot__spinner" aria-hidden="true"></span>
+          <h3>Iniciando monitoreo de presencia</h3>
+          <p>Estamos preparando cámara y detector facial. Un momento, por favor...</p>
+        </div>
+      </div>
+    }
   `,
+  styleUrl: './shell.scss',
 })
 export class Shell implements OnInit {
-  private presence = inject(PresenceService);
+  readonly presence = inject(PresenceService);
 
   ngOnInit(): void {
     // Monitoreo global: arranca al entrar a cualquier página autenticada (no

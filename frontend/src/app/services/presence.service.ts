@@ -8,6 +8,7 @@ type Status = 'off' | 'starting' | 'running' | 'no-camera' | 'denied';
 const TICK_MS = 1000;
 const DETECT_MS = 1500;
 const HEARTBEAT_MS = 30000;
+const MODEL_RETRIES = 2;
 const LEADER_KEY = 'sc_presence_leader';
 const LEADER_TTL_MS = 6000;
 
@@ -37,6 +38,7 @@ export class PresenceService {
   private detectTimer?: ReturnType<typeof setInterval>;
   private heartbeatTimer?: ReturnType<typeof setInterval>;
   private leaderTimer?: ReturnType<typeof setInterval>;
+  private detectInFlight = false;
   private started = false;
 
   private readonly flushOnHide = () => {
@@ -95,25 +97,43 @@ export class PresenceService {
       this.video.playsInline = true;
       this.video.srcObject = this.stream;
       await this.video.play();
-      this.model = await blazeface.load();
+      // Encendemos el flag al obtener stream para reflejar que la cámara sí abrió.
       this.cameraOn.set(true);
+      this.model = await this.loadModelWithRetry();
       this.status.set('running');
+      void this.detect();
       this.detectTimer = setInterval(() => this.detect(), DETECT_MS);
     } catch (err) {
-      // Sin cámara o permiso denegado: no se puede monitorear.
-      this.cameraOn.set(false);
-      const denied = (err as DOMException)?.name === 'NotAllowedError';
+      // Si falla la carga del modelo, cerramos la cámara para no dejarla "encendida" sin monitoreo.
+      this.releaseCamera();
+      const errorName = (err as DOMException)?.name;
+      const denied = errorName === 'NotAllowedError' || errorName === 'PermissionDeniedError';
       this.status.set(denied ? 'denied' : 'no-camera');
     }
   }
 
+  private async loadModelWithRetry(): Promise<blazeface.BlazeFaceModel> {
+    let lastError: unknown;
+    for (let attempt = 1; attempt <= MODEL_RETRIES; attempt++) {
+      try {
+        return await blazeface.load();
+      } catch (err) {
+        lastError = err;
+      }
+    }
+    throw lastError ?? new Error('No se pudo cargar el modelo de detección facial');
+  }
+
   private async detect(): Promise<void> {
-    if (!this.model || !this.video || this.video.readyState < 2) return;
+    if (this.detectInFlight || !this.model || !this.video || this.video.readyState < 2) return;
+    this.detectInFlight = true;
     try {
       const preds = await this.model.estimateFaces(this.video, false);
       this.faceDetected.set(preds.length > 0);
     } catch {
       this.faceDetected.set(false);
+    } finally {
+      this.detectInFlight = false;
     }
   }
 
@@ -126,6 +146,8 @@ export class PresenceService {
       this.video = undefined;
     }
     this.model = undefined;
+    this.detectInFlight = false;
+    this.cameraOn.set(false);
   }
 
   /** Atribuye el tiempo transcurrido a presente/ausente según el rostro. Solo el líder cuenta. */
