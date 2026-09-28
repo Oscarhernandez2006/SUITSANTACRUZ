@@ -1,303 +1,227 @@
 ﻿.login {
   display: flex;
   min-height: 100vh;
+  background: var(--color-canvas);
 
   // ============================================================
-  // ASIDE — Panel izquierdo con carrusel
+  // ASIDE — carrusel de fotos con overlay oscuro
   // ============================================================
   &__aside {
     position: relative;
-    width: 42%;
-    background: linear-gradient(160deg, #12191F 0%, #1E2D2F 55%, #12191F 100%);
+    width: 56%;
     display: flex;
     flex-direction: column;
+    justify-content: space-between;
+    padding: 2.5rem 3.25rem 2.75rem;
+    overflow: hidden;
+    color: #fff;
+    background: #0b1f16;
+  }
+
+  &__photos {
+    position: absolute;
+    inset: 0;
+    z-index: 0;
+  }
+
+  &__photo {
+    position: absolute;
+    inset: -2%;
+    background-size: cover;
+    background-position: center;
+    opacity: 0;
+    transform: scale(1.02);
+    transition: opacity 1400ms ease, transform 9000ms linear;
+
+    &--active {
+      opacity: 1;
+      transform: scale(1.12);
+    }
+  }
+
+  &__shade {
+    position: absolute;
+    inset: 0;
+    background:
+      linear-gradient(180deg, rgba(8, 26, 18, 0.62) 0%, rgba(8, 26, 18, 0.5) 38%, rgba(6, 20, 14, 0.9) 100%),
+      linear-gradient(120deg, rgba(20, 53, 42, 0.55) 0%, rgba(47, 143, 78, 0.18) 60%, transparent 100%);
+  }
+
+  &__aside-top {
+    position: relative;
+    z-index: 1;
+    display: flex;
     align-items: center;
-    justify-content: center;
-    padding: 3rem 2.5rem;
-    overflow: hidden;
+    gap: 0.85rem;
   }
 
-  // ---- Decoraciones de fondo ----
-  &__aside-deco {
-    position: absolute;
-    inset: 0;
-    pointer-events: none;
-    overflow: hidden;
-  }
+  &__logo-chip {
+    display: grid;
+    place-items: center;
+    width: 52px;
+    height: 52px;
+    padding: 0.4rem;
+    border-radius: 16px;
+    background: rgba(255, 255, 255, 0.14);
+    border: 1px solid rgba(255, 255, 255, 0.24);
+    backdrop-filter: blur(8px);
+    flex-shrink: 0;
 
-  &__aside-circle {
-    position: absolute;
-    border-radius: 50%;
+    img { width: 100%; height: 100%; object-fit: contain; }
 
-    &--1 {
-      width: 320px;
-      height: 320px;
-      top: -80px;
-      right: -100px;
-      background: radial-gradient(circle, rgba(123, 196, 86, 0.16) 0%, transparent 70%);
-    }
-
-    &--2 {
-      width: 250px;
-      height: 250px;
-      bottom: -60px;
-      left: -80px;
-      background: radial-gradient(circle, rgba(123, 196, 86, 0.1) 0%, transparent 70%);
+    &--light {
+      width: 42px;
+      height: 42px;
+      border-radius: 12px;
+      background: var(--color-surface-2);
+      border-color: var(--color-border);
     }
   }
 
-  &__aside-grid {
-    position: absolute;
-    inset: 0;
-    background-image:
-      linear-gradient(rgba(255, 255, 255, 0.04) 1px, transparent 1px),
-      linear-gradient(90deg, rgba(255, 255, 255, 0.04) 1px, transparent 1px);
-    background-size: 48px 48px;
+  &__brand-text {
+    display: flex;
+    flex-direction: column;
+    line-height: 1.15;
   }
 
-  // ============================================================
-  // CARRUSEL
-  // ============================================================
+  &__brand-name {
+    font-family: var(--font-heading);
+    font-size: 1.3rem;
+    font-weight: 800;
+    letter-spacing: -0.02em;
+  }
+
+  &__brand-accent { color: var(--color-accent-light); }
+
+  &__brand-sub {
+    font-size: 0.72rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.12em;
+    color: rgba(255, 255, 255, 0.65);
+  }
+
+  // ---- Carrusel de textos ----
   &__carousel {
     position: relative;
     z-index: 1;
-    width: 100%;
-    max-width: 380px;
-    min-height: 340px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
+    flex: 1;
+    min-height: 300px;
+    margin-top: 2rem;
   }
 
   &__slide {
     position: absolute;
-    text-align: center;
-    width: 100%;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    max-width: 560px;
     opacity: 0;
-    transform: translateY(16px) scale(0.97);
-    transition: opacity 700ms cubic-bezier(0.4, 0, 0.2, 1), transform 700ms cubic-bezier(0.4, 0, 0.2, 1);
+    transform: translateY(18px);
+    transition: opacity 700ms ease, transform 700ms ease;
     pointer-events: none;
 
     &--active {
       opacity: 1;
-      transform: translateY(0) scale(1);
+      transform: translateY(0);
       pointer-events: auto;
     }
   }
 
-  // ---- Slide informativo: icono + textos ----
-  &__slide-icon-ring {
-    width: 80px;
-    height: 80px;
-    margin: 0 auto 1.75rem;
-    border-radius: 50%;
-    background: rgba(255, 255, 255, 0.06);
-    border: 2px solid rgba(123, 196, 86, 0.35);
-    display: flex;
+  &__eyebrow {
+    display: inline-flex;
     align-items: center;
-    justify-content: center;
-    box-shadow:
-      0 4px 16px rgba(0, 0, 0, 0.25),
-      0 0 0 8px rgba(123, 196, 86, 0.06);
-  }
-
-  &__slide-icon {
-    font-size: 36px;
-    color: var(--color-accent-light);
-    font-variation-settings: 'FILL' 0, 'wght' 300, 'GRAD' 0, 'opsz' 36;
-  }
-
-  &__slide-title {
-    font-family: var(--font-heading);
-    font-size: 2.25rem;
+    gap: 0.4rem;
+    padding: 0.3rem 0.75rem;
+    border-radius: 999px;
+    background: rgba(255, 255, 255, 0.12);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    backdrop-filter: blur(6px);
+    font-size: 0.72rem;
     font-weight: 700;
-    color: var(--color-white);
-    letter-spacing: -0.04em;
-    margin-bottom: 0.25rem;
-    line-height: 1.1;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: rgba(255, 255, 255, 0.92);
   }
 
-  &__slide-subtitle {
+  &__headline {
+    margin: 1rem 0 0;
     font-family: var(--font-heading);
-    font-size: 1.125rem;
-    font-weight: 500;
-    color: var(--color-accent-light);
-    margin-bottom: 0.75rem;
-    letter-spacing: -0.01em;
+    font-size: clamp(2.1rem, 3.4vw, 3.1rem);
+    font-weight: 800;
+    line-height: 1.08;
+    letter-spacing: -0.035em;
+    color: #fff;
+    text-shadow: 0 2px 24px rgba(0, 0, 0, 0.35);
+
+    span { color: var(--color-accent-light); }
   }
 
-  &__slide-desc {
-    font-family: var(--font-body);
-    font-size: 0.9375rem;
-    font-weight: 400;
-    color: rgba(255, 255, 255, 0.6);
-    line-height: 1.65;
-    max-width: 320px;
-    margin: 0 auto;
-  }
-
-  // ---- Lista de features ----
-  &__slide-logo {
-    width: 130px;
-    height: 130px;
-    object-fit: contain;
-    margin: 0 auto 1.75rem;
-    display: block;
-    padding: 1rem;
-    background: var(--color-white);
-    border-radius: 20px;
-    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.3);
+  &__lead {
+    margin: 1rem 0 0;
+    max-width: 480px;
+    font-size: 1rem;
+    line-height: 1.6;
+    color: rgba(255, 255, 255, 0.82);
   }
 
   &__feat-list {
     list-style: none;
     padding: 0;
-    margin: 1.25rem auto 0;
+    margin: 1.4rem 0 0;
     display: flex;
-    flex-direction: column;
-    gap: 0.75rem;
-    max-width: 260px;
+    flex-wrap: wrap;
+    gap: 0.55rem;
   }
 
   &__feat-item {
-    display: flex;
-    align-items: center;
-    gap: 0.75rem;
-    font-family: var(--font-body);
-    font-size: 0.9375rem;
-    font-weight: 500;
-    color: rgba(255, 255, 255, 0.78);
-    text-align: left;
-  }
-
-  &__feat-icon {
-    font-size: 22px;
-    color: var(--color-accent-light);
-    font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 22;
-    flex-shrink: 0;
-  }
-
-  // ---- Slide tagline con cursor ----
-  &__tagline-line {
-    font-family: var(--font-heading);
-    font-size: 2rem;
-    font-weight: 700;
-    color: var(--color-white);
-    letter-spacing: -0.04em;
-    line-height: 1.25;
-    margin: 0;
-
-    &--accent {
-      color: var(--color-accent-light);
-      font-style: italic;
-      margin-top: 0.25rem;
-    }
-  }
-
-  &__brand {
     display: inline-flex;
     align-items: center;
-    gap: 0.25rem;
-    margin: 0 0 2rem;
-    position: relative;
+    gap: 0.45rem;
+    padding: 0.5rem 0.85rem;
+    border-radius: 12px;
+    background: rgba(255, 255, 255, 0.1);
+    border: 1px solid rgba(255, 255, 255, 0.16);
+    backdrop-filter: blur(6px);
+    font-size: 0.875rem;
+    font-weight: 600;
+    color: rgba(255, 255, 255, 0.92);
+
+    .material-symbols-outlined { font-size: 18px; color: var(--color-accent-light); }
   }
 
-  &__brand-logo {
-    width: 240px;
-    height: auto;
-    object-fit: contain;
-    filter: drop-shadow(0 4px 12px rgba(0, 0, 0, 0.25));
-  }
-
-  &__brand-name {
-    font-family: var(--font-heading);
-    font-size: 2.75rem;
-    font-weight: 800;
-    letter-spacing: -0.02em;
-    color: var(--color-white);
-    display: inline-flex;
-    gap: 0.6rem;
-  }
-
-  &__brand-accent {
-    background: linear-gradient(135deg, var(--color-accent-light) 0%, #B2E68C 100%);
-    -webkit-background-clip: text;
-    -webkit-text-fill-color: transparent;
-    background-clip: text;
-  }
-
-  &__brand-cursor {
-    position: absolute;
-    right: -32px;
-    bottom: 4px;
-    font-size: 28px;
-    color: var(--color-accent);
-    font-variation-settings: 'FILL' 1, 'wght' 400, 'GRAD' 0, 'opsz' 28;
-    animation: cursorClick 2.5s ease-in-out infinite;
-    transform-origin: center center;
-  }
-
-  @keyframes cursorClick {
-    0%, 100% {
-      transform: translate(0, 0) scale(1);
-      opacity: 1;
-    }
-    40% {
-      transform: translate(-6px, -4px) scale(1);
-      opacity: 1;
-    }
-    50% {
-      transform: translate(-6px, -4px) scale(0.8);
-      opacity: 0.85;
-    }
-    60% {
-      transform: translate(-6px, -4px) scale(1);
-      opacity: 1;
-    }
-    80% {
-      transform: translate(0, 0) scale(1);
-      opacity: 1;
-    }
-  }
-
-  // ============================================================
-  // PROGRESS BAR
-  // ============================================================
+  // ---- Progreso ----
   &__progress {
     position: relative;
     z-index: 1;
     display: flex;
+    align-items: center;
     gap: 8px;
-    margin-top: 2.5rem;
+    margin-top: 2.25rem;
   }
 
   &__progress-item {
-    width: 48px;
+    width: 44px;
     height: 4px;
     border-radius: 2px;
-    background: rgba(255, 255, 255, 0.15);
+    background: rgba(255, 255, 255, 0.22);
     border: none;
     padding: 0;
     cursor: pointer;
     overflow: hidden;
-    transition: background var(--transition-fast);
 
-    &:hover {
-      background: rgba(255, 255, 255, 0.28);
-    }
+    &:hover { background: rgba(255, 255, 255, 0.35); }
   }
 
   &__progress-bar {
     width: 0;
     height: 100%;
-    background: var(--color-accent-light);
+    background: #fff;
     border-radius: 2px;
-    transition: width 150ms ease;
   }
 
   &__progress-item--active &__progress-bar {
-    width: 100%;
-    animation: progressFill 8000ms linear forwards;
+    animation: progressFill 7000ms linear forwards;
   }
 
   @keyframes progressFill {
@@ -305,73 +229,80 @@
     to { width: 100%; }
   }
 
+  &__counter {
+    margin-left: auto;
+    font-size: 0.78rem;
+    font-weight: 600;
+    font-variant-numeric: tabular-nums;
+    color: rgba(255, 255, 255, 0.7);
+  }
+
   // ============================================================
-  // MAIN — Panel derecho con formulario
+  // MAIN — formulario
   // ============================================================
   &__main {
     flex: 1;
     display: flex;
     align-items: center;
     justify-content: center;
-    background: var(--color-white);
+    background: var(--color-canvas);
     padding: 2rem;
   }
 
-  // ---- Card ----
   &__card {
     width: 100%;
-    max-width: 420px;
-    background: var(--color-white);
-    border-radius: 20px;
-    padding: 2.5rem;
-    box-shadow:
-      0 1px 3px rgba(18, 25, 31, 0.04),
-      0 8px 32px rgba(18, 25, 31, 0.08);
-    border: 1px solid var(--color-border);
+    max-width: 400px;
   }
 
   &__card-header {
-    margin-bottom: 2rem;
+    margin-bottom: 1.75rem;
   }
 
   &__mobile-brand {
     display: none;
     align-items: center;
-    font-family: var(--font-heading);
-    font-weight: 700;
-    font-size: 1.25rem;
-    color: var(--color-text-primary);
+    gap: 0.6rem;
     margin-bottom: 1.5rem;
-    letter-spacing: -0.01em;
   }
 
   &__mobile-brand-text {
-    display: inline-flex;
-    gap: 0.32rem;
-    align-items: baseline;
+    font-family: var(--font-heading);
+    font-weight: 800;
+    font-size: 1.2rem;
+    color: var(--color-text-primary);
+    letter-spacing: -0.02em;
+
+    .login__brand-accent { color: var(--color-accent); }
   }
 
-  &__mobile-brand-logo {
-    width: 160px;
-    height: auto;
-    object-fit: contain;
+  &__kicker {
+    font-size: 0.72rem;
+    font-weight: 700;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--color-accent);
   }
 
   &__title {
     font-family: var(--font-heading);
-    font-size: 1.5rem;
-    font-weight: 700;
+    font-size: 1.85rem;
+    font-weight: 800;
     color: var(--color-text-primary);
-    margin-bottom: 0.375rem;
+    margin: 0.3rem 0 0.4rem;
     letter-spacing: -0.03em;
   }
 
   &__subtitle {
-    font-family: var(--font-body);
     color: var(--color-text-secondary);
-    font-size: 0.875rem;
-    font-weight: 400;
+    font-size: 0.9rem;
     line-height: 1.5;
+  }
+
+  &__help {
+    margin-top: 1.75rem;
+    text-align: center;
+    font-size: 0.78rem;
+    color: var(--color-text-muted);
   }
 
   // ---- Form ----
@@ -424,14 +355,14 @@
 
   &__input {
     width: 100%;
-    padding: 0.8125rem 2.75rem 0.8125rem 2.75rem;
-    border: 1.5px solid var(--color-border);
-    border-radius: var(--radius-md);
+    padding: 0.85rem 2.75rem 0.85rem 2.75rem;
+    border: 1px solid var(--color-border);
+    border-radius: 12px;
     font-family: var(--font-body);
     font-size: 0.9375rem;
     font-weight: 400;
     color: var(--color-text-primary);
-    background: var(--color-surface);
+    background: var(--color-white);
     transition: all var(--transition-fast);
     letter-spacing: 0.01em;
 
@@ -443,7 +374,7 @@
     &:focus {
       border-color: var(--color-accent);
       background: var(--color-white);
-      box-shadow: 0 0 0 3px rgba(87, 173, 49, 0.1);
+      box-shadow: var(--ring-accent);
     }
   }
 
@@ -500,20 +431,20 @@
     transition: color var(--transition-fast);
 
     &:hover {
-      color: #2d6048;
+      color: var(--color-accent-dark);
       text-decoration: underline;
     }
   }
 
   &__btn-submit {
     width: 100%;
-    padding: 0.875rem;
+    padding: 0.9rem;
     font-family: var(--font-heading);
     font-size: 0.9375rem;
-    font-weight: 600;
+    font-weight: 700;
     letter-spacing: 0.01em;
     margin-top: 0.5rem;
-    border-radius: var(--radius-md);
+    border-radius: 12px;
     display: flex;
     align-items: center;
     justify-content: center;
@@ -577,49 +508,16 @@
 }
 
 /* ---- Responsive ---- */
+@media (max-width: 1024px) {
+  .login__aside { width: 48%; padding: 2rem 2.25rem; }
+}
+
 @media (max-width: 768px) {
   .login {
     flex-direction: column;
 
     &__aside {
-      width: 100%;
-      min-height: auto;
-      padding: 2.5rem 1.5rem 2rem;
-    }
-
-    &__carousel {
-      min-height: 260px;
-    }
-
-    &__tagline-line {
-      font-size: 1.5rem;
-    }
-
-    &__brand-name {
-      font-size: 2rem;
-    }
-
-    &__brand-cursor {
-      font-size: 22px;
-      right: -24px;
-    }
-
-    &__slide-title {
-      font-size: 1.5rem;
-    }
-
-    &__slide-icon-ring {
-      width: 60px;
-      height: 60px;
-      margin-bottom: 1.25rem;
-    }
-
-    &__slide-icon {
-      font-size: 28px;
-    }
-
-    &__slide-desc {
-      font-size: 0.8125rem;
+      display: none;
     }
 
     &__mobile-brand {
@@ -627,13 +525,8 @@
     }
 
     &__main {
-      padding: 1.5rem;
-    }
-
-    &__card {
       padding: 2rem 1.5rem;
-      box-shadow: none;
-      border: none;
+      align-items: flex-start;
     }
   }
 }
@@ -850,11 +743,11 @@
     height: 64px;
     margin: 0.5rem auto 1rem;
     border-radius: 50%;
-    background: rgba(87, 173, 49, 0.1);
+    background: var(--color-success-soft);
     color: var(--color-accent);
 
     &--success {
-      background: rgba(87, 173, 49, 0.14);
+      background: var(--color-success-soft);
     }
   }
 

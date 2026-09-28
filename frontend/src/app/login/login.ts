@@ -39,74 +39,66 @@ export class Login implements OnInit, OnDestroy {
   forgotError = signal('');
   forgotSent = signal(false);
 
-  readonly slides = [
+  /** Fotos reales de planta para el fondo del carrusel (public/login). */
+  readonly photos = [1, 2, 3, 4, 5, 6].map((n) => `login/planta-0${n}.jpg`);
 
+  readonly slides = [
     {
       type: 'tagline' as const,
     },
     {
       type: 'features' as const,
-      title: 'Siesa Cloud',
-      subtitle: 'ERP en la Nube',
-      logo: 'logo-siesa.png',
-      icon: 'cloud_sync',
-      features: [
-        { name: 'Contabilidad', icon: 'account_balance' },
-        { name: 'Inventario', icon: 'inventory_2' },
-        { name: 'Facturaci\u00f3n', icon: 'receipt_long' },
-        { name: 'Inicio de sesi\u00f3n autom\u00e1tico', icon: 'lock_open' },
-      ],
-    },
-    {
-      type: 'features' as const,
       title: 'SIGCOM',
-      subtitle: 'Gesti\u00f3n Comercial y Toma de Pedidos',
-      logo: 'logo-sigcom.png',
-      icon: 'shopping_cart',
+      subtitle: 'Gesti\u00f3n comercial y toma de pedidos',
       features: [
         { name: 'Pedidos', icon: 'shopping_cart' },
         { name: 'Clientes', icon: 'groups' },
-        { name: 'Precios y listas', icon: 'sell' },
+        { name: 'Listas de precios', icon: 'sell' },
         { name: 'Integraci\u00f3n Siesa', icon: 'sync_alt' },
       ],
     },
     {
       type: 'features' as const,
       title: 'SIGCOMPRO',
-      subtitle: 'Operaciones, Despacho y Cuadre',
-      logo: 'logo-sigcompro.png',
-      icon: 'inventory',
+      subtitle: 'Operaciones, despacho y cuadre',
       features: [
         { name: 'Pedidos', icon: 'receipt_long' },
         { name: 'Despacho', icon: 'local_shipping' },
-        { name: 'Clientes', icon: 'groups' },
+        { name: 'Monitoreo', icon: 'monitoring' },
         { name: 'Cuadre de caja', icon: 'point_of_sale' },
       ],
     },
     {
       type: 'features' as const,
-      title: 'Incapacidades',
-      subtitle: 'Gesti\u00f3n de Incapacidades M\u00e9dicas',
-      logo: null,
-      icon: 'medical_information',
+      title: 'SIGROUTE',
+      subtitle: 'Planeaci\u00f3n y ejecuci\u00f3n de rutas',
       features: [
-        { name: 'Registro de incapacidades', icon: 'assignment' },
-        { name: 'Seguimiento', icon: 'monitoring' },
-        { name: 'Personal', icon: 'groups' },
+        { name: 'Planificaci\u00f3n', icon: 'event_note' },
+        { name: 'Asignaci\u00f3n de flota', icon: 'local_shipping' },
+        { name: 'Diagrama de despacho', icon: 'route' },
+        { name: 'Nivel de servicio', icon: 'verified' },
+      ],
+    },
+    {
+      type: 'features' as const,
+      title: 'SIGNOM',
+      subtitle: 'Asistencia y n\u00f3mina',
+      features: [
+        { name: 'Marcaciones', icon: 'fingerprint' },
+        { name: 'Novedades', icon: 'event_busy' },
+        { name: 'Horas extra', icon: 'schedule' },
         { name: 'Reportes', icon: 'summarize' },
       ],
     },
     {
       type: 'features' as const,
-      title: 'Ejecutables',
-      subtitle: 'Procesador de Integraciones Siesa',
-      logo: 'logo-ejecutables.svg',
-      icon: 'factory',
+      title: 'Siesa Cloud',
+      subtitle: 'ERP en la nube',
       features: [
-        { name: 'Pedidos', icon: 'shopping_cart' },
-        { name: 'Requisiciones', icon: 'swap_horiz' },
-        { name: 'Sobrecostos', icon: 'price_change' },
-        { name: 'Carga de archivos Excel', icon: 'upload_file' },
+        { name: 'Contabilidad', icon: 'account_balance' },
+        { name: 'Inventario', icon: 'inventory_2' },
+        { name: 'Facturaci\u00f3n', icon: 'receipt_long' },
+        { name: 'Inicio autom\u00e1tico', icon: 'lock_open' },
       ],
     },
   ];
@@ -116,7 +108,7 @@ export class Login implements OnInit, OnDestroy {
   ngOnInit(): void {
     this.intervalId = setInterval(() => {
       this.activeSlide.update((i) => (i + 1) % this.slides.length);
-    }, 8000);
+    }, 7000);
   }
 
   ngOnDestroy(): void {

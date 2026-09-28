@@ -416,7 +416,7 @@
     &:disabled { opacity: 0.6; cursor: not-allowed; }
 
     &--primary {
-      background: linear-gradient(135deg, #7BC456 0%, #57AD31 100%);
+      background: var(--gradient-forest);
       color: #fff;
       &:hover:not(:disabled) { filter: brightness(1.05); }
     }

@@ -137,7 +137,7 @@ export interface DonutDatum {
         transition: background var(--transition-fast), opacity var(--transition-fast);
       }
       .dc__legend-item:hover {
-        background: rgba(87, 173, 49, 0.05);
+        background: rgba(47, 143, 78, 0.05);
       }
       .dc__legend-item--dim {
         opacity: 0.45;

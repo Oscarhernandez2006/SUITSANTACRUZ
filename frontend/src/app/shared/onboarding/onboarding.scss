@@ -56,7 +56,7 @@
 .ob-next {
   display: inline-flex; align-items: center; gap: 0.35rem;
   padding: 0.65rem 1.3rem;
-  background: linear-gradient(135deg, #71bf4c 0%, #57AD31 100%);
+  background: var(--gradient-forest);
   color: #fff; border: none; border-radius: var(--radius-md);
   font-size: 0.9rem; font-weight: 700; cursor: pointer;
   transition: filter 140ms ease;

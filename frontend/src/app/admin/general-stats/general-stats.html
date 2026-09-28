@@ -1,0 +1,116 @@
+<div class="admin-shell">
+  <app-sidebar></app-sidebar>
+  <main class="admin-shell__main">
+    <div class="page">
+      <div class="page-head">
+        <div class="page-head__info">
+          <span class="material-symbols-outlined page-head__icon">monitoring</span>
+          <div>
+            <h1 class="page-head__title">Estadísticas generales</h1>
+            <p class="page-head__subtitle">
+              Indicadores del día de cada aplicación conectada
+              @if (generatedAt()) { · actualizado {{ generatedAt() | date:'h:mm a' }} }
+            </p>
+          </div>
+        </div>
+        <div class="page-head__actions">
+          <button class="btn btn--secondary" (click)="load()" [disabled]="loading()">
+            <span class="material-symbols-outlined">refresh</span> Actualizar
+          </button>
+        </div>
+      </div>
+
+      <!-- Resumen de la suite -->
+      <section class="gs-strip">
+        <div class="gs-tile gs-tile--hero">
+          <span class="gs-tile__label">Apps reportando</span>
+          <span class="gs-tile__value">{{ connectedCount() }}<small>/{{ apps().length }}</small></span>
+          <span class="gs-tile__hint">con indicadores en vivo</span>
+          <span class="material-symbols-outlined gs-tile__icon">hub</span>
+        </div>
+        <a class="gs-tile" routerLink="/admin/presencia">
+          <span class="gs-tile__label">Activos ahora</span>
+          <span class="gs-tile__value">{{ onlineNow() }}</span>
+          <span class="gs-tile__hint">{{ withRecordToday() }} con registro hoy</span>
+          <span class="material-symbols-outlined gs-tile__icon">timer</span>
+        </a>
+        <div class="gs-tile">
+          <span class="gs-tile__label">Usuarios de la suite</span>
+          <span class="gs-tile__value">{{ suite()?.summary?.users_active ?? '—' }}</span>
+          <span class="gs-tile__hint">{{ suite()?.summary?.users_total ?? 0 }} registrados</span>
+          <span class="material-symbols-outlined gs-tile__icon">group</span>
+        </div>
+        <div class="gs-tile">
+          <span class="gs-tile__label">Ingresos SSO (7d)</span>
+          <span class="gs-tile__value">{{ suite()?.summary?.sso_last_7d ?? '—' }}</span>
+          <span class="gs-tile__hint">{{ suite()?.summary?.logins_last_7d ?? 0 }} inicios de sesión</span>
+          <span class="material-symbols-outlined gs-tile__icon">bolt</span>
+        </div>
+      </section>
+
+      @if (error()) {
+        <div class="empty-state">
+          <span class="material-symbols-outlined empty-state__icon">cloud_off</span>
+          <h3 class="empty-state__title">No se pudieron cargar las estadísticas</h3>
+          <p class="empty-state__text">Revisa tu conexión e intenta de nuevo.</p>
+          <button class="btn btn--primary" (click)="load()">Reintentar</button>
+        </div>
+      } @else {
+        <section class="gs-grid">
+          @if (loading() && !apps().length) {
+            @for (s of skeletons; track s) {
+              <div class="gs-card gs-card--skeleton sc-skeleton"></div>
+            }
+          } @else {
+            @for (app of apps(); track app.slug) {
+              <article class="gs-card" [style.--app-color]="appColor(app)">
+                <header class="gs-card__head">
+                  <span class="gs-card__icon">
+                    @if (app.logo) { <img [src]="app.logo" alt="" /> }
+                    @else { <span class="material-symbols-outlined">{{ app.icon || 'apps' }}</span> }
+                  </span>
+                  <div class="gs-card__title">
+                    <strong>{{ app.name }}</strong>
+                    <span class="gs-card__status" [attr.data-status]="app.status">
+                      <span class="gs-card__dot"></span>
+                      {{ app.status === 'ok' ? 'En vivo' : app.status === 'error' ? 'Error al consultar' : 'Sin conexión' }}
+                    </span>
+                  </div>
+                  <a class="gs-card__open" [href]="app.url" target="_blank" rel="noopener" title="Abrir {{ app.name }}">
+                    <span class="material-symbols-outlined">open_in_new</span>
+                  </a>
+                </header>
+
+                @if (app.status === 'ok' && app.metrics.length) {
+                  <div class="gs-card__metrics">
+                    @for (m of app.metrics; track m.key) {
+                      <div class="gs-metric" [class.gs-metric--warn]="m.tone === 'warn' && m.value > 0" [class.gs-metric--good]="m.tone === 'good'">
+                        <span class="gs-metric__value">{{ format(m) }}</span>
+                        <span class="gs-metric__label">{{ m.label }}</span>
+                        @if (m.hint) { <span class="gs-metric__hint">{{ m.hint }}</span> }
+                      </div>
+                    }
+                  </div>
+                } @else {
+                  <div class="gs-card__empty">
+                    <span class="material-symbols-outlined">{{ app.status === 'error' ? 'error' : 'link_off' }}</span>
+                    <p>
+                      @if (app.status === 'error') { La app respondió con error. Verifica que esté desplegada la última versión. }
+                      @else { No se pudo contactar la app. Revisa su URL de API y el secreto SSO. }
+                    </p>
+                  </div>
+                }
+              </article>
+            } @empty {
+              <div class="empty-state gs-grid__empty">
+                <span class="material-symbols-outlined empty-state__icon">apps</span>
+                <h3 class="empty-state__title">Sin aplicaciones conectadas</h3>
+                <p class="empty-state__text">Activa aplicaciones con API de aprovisionamiento para ver sus indicadores aquí.</p>
+              </div>
+            }
+          }
+        </section>
+      }
+    </div>
+  </main>
+</div>

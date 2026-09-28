@@ -6,7 +6,7 @@
 
 /** Colores semánticos: cada uno comunica una intención concreta. */
 export const CHART_SEMANTIC = {
-  primary: '#57AD31', // verde salvia — métrica principal
+  primary: '#2f8f4e', // verde bosque — métrica principal
   info: '#2D7D9A', // azul — información / SSO
   positive: '#2E9E5B', // verde — resultado positivo
   negative: '#D9534F', // rojo — resultado negativo / fallo
@@ -19,7 +19,7 @@ export const CHART_SEMANTIC = {
  * Se usa cuando hay que distinguir categorías sin una semántica específica.
  */
 export const CHART_CATEGORICAL = [
-  '#57AD31', // sage
+  '#2f8f4e', // forest
   '#2D7D9A', // teal
   '#E0A83B', // amber
   '#7C6BB0', // muted violet

@@ -23,6 +23,7 @@ export const routes: Routes = [
       { path: 'admin/auditoria', loadComponent: () => import('./admin/audit/audit').then(m => m.Audit), canActivate: [adminGuard] },
       { path: 'admin/sesiones', loadComponent: () => import('./admin/sessions/sessions').then(m => m.Sessions), canActivate: [adminGuard] },
       { path: 'admin/presencia', loadComponent: () => import('./admin/presence/presence').then(m => m.PresenceAdmin), canActivate: [adminGuard] },
+      { path: 'admin/estadisticas', loadComponent: () => import('./admin/general-stats/general-stats').then(m => m.GeneralStats), canActivate: [adminGuard] },
     ],
   },
   { path: '**', redirectTo: 'login' },

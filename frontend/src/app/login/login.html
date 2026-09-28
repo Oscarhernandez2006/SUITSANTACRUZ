@@ -1,40 +1,40 @@
 ﻿<div class="login">
-  <!-- Panel izquierdo: carrusel -->
+  <!-- Panel izquierdo: carrusel de fotos con overlay oscuro -->
   <aside class="login__aside">
-    <!-- Elementos decorativos de fondo -->
-    <div class="login__aside-deco">
-      <div class="login__aside-circle login__aside-circle--1"></div>
-      <div class="login__aside-circle login__aside-circle--2"></div>
-      <div class="login__aside-grid"></div>
+    <div class="login__photos" aria-hidden="true">
+      @for (photo of photos; track photo) {
+        <div
+          class="login__photo"
+          [class.login__photo--active]="activeSlide() % photos.length === $index"
+          [style.background-image]="'url(' + photo + ')'"
+        ></div>
+      }
+      <div class="login__shade"></div>
     </div>
+
+    <header class="login__aside-top">
+      <span class="login__logo-chip"><img src="logo-scs.png" alt="" /></span>
+      <div class="login__brand-text">
+        <span class="login__brand-name">SantaCruz <span class="login__brand-accent">Suite</span></span>
+        <span class="login__brand-sub">Grupo Santacruz</span>
+      </div>
+    </header>
 
     <div class="login__carousel">
       @for (slide of slides; track $index) {
         <div class="login__slide" [class.login__slide--active]="activeSlide() === $index">
           @if (slide.type === 'tagline') {
-            <!-- Slide tagline: marca arriba del texto -->
-            <div class="login__brand">
-              <span class="login__brand-name"><span>SantaCruz</span><span class="login__brand-accent">Suite</span></span>
-            </div>
-            <p class="login__tagline-line">Diferentes herramientas</p>
-            <p class="login__tagline-line">un mismo software</p>
-            <p class="login__tagline-line login__tagline-line--accent">al alcance de un click</p>
+            <span class="login__eyebrow">Plataforma corporativa</span>
+            <h1 class="login__headline">Todas tus herramientas,<br /><span>un solo acceso.</span></h1>
+            <p class="login__lead">Inicia sesión una vez y entra a SIGCOM, SIGCOMPRO, SIGROUTE, SIGNOM, Siesa y más, sin volver a escribir tu contraseña.</p>
           } @else {
-            <!-- Slide con lista de features del sistema -->
-            @if (slide.logo) {
-              <img class="login__slide-logo" [src]="slide.logo" [alt]="slide.title + ' logo'" />
-            } @else {
-              <div class="login__slide-icon-ring">
-                <span class="material-symbols-outlined login__slide-icon">{{ slide.icon }}</span>
-              </div>
-            }
-            <h1 class="login__slide-title">{{ slide.title }}</h1>
-            <p class="login__slide-subtitle">{{ slide.subtitle }}</p>
+            <span class="login__eyebrow">{{ slide.subtitle }}</span>
+            <h1 class="login__headline">{{ slide.title }}</h1>
             <ul class="login__feat-list">
               @for (feat of slide.features; track feat.name) {
                 <li class="login__feat-item">
-                  <span class="material-symbols-outlined login__feat-icon">{{ feat.icon }}</span>
-                  <span>{{ feat.name }}</span>
+                  <span class="material-symbols-outlined">{{ feat.icon }}</span>
+                  {{ feat.name }}
                 </li>
               }
             </ul>
@@ -43,17 +43,19 @@
       }
     </div>
 
-    <!-- Progress bars -->
     <div class="login__progress">
       @for (slide of slides; track $index) {
         <button
+          type="button"
           class="login__progress-item"
           [class.login__progress-item--active]="activeSlide() === $index"
+          [attr.aria-label]="'Ir a la diapositiva ' + ($index + 1)"
           (click)="goToSlide($index)"
         >
           <div class="login__progress-bar"></div>
         </button>
       }
+      <span class="login__counter">{{ activeSlide() + 1 }} / {{ slides.length }}</span>
     </div>
   </aside>
 
@@ -62,10 +64,12 @@
     <div class="login__card">
       <div class="login__card-header">
         <div class="login__mobile-brand">
-          <span class="login__mobile-brand-text"><span>SantaCruz</span><span class="login__brand-accent">Suite</span></span>
+          <span class="login__logo-chip login__logo-chip--light"><img src="logo-scs.png" alt="" /></span>
+          <span class="login__mobile-brand-text">SantaCruz <span class="login__brand-accent">Suite</span></span>
         </div>
+        <span class="login__kicker">Grupo Santacruz</span>
         <h2 class="login__title">Iniciar sesi&#243;n</h2>
-        <p class="login__subtitle">Ingresa tus credenciales para continuar</p>
+        <p class="login__subtitle">Ingresa tus credenciales para acceder a la suite.</p>
       </div>
 
       <form class="login__form" (ngSubmit)="onLogin()">
@@ -139,6 +143,8 @@
           }
         </button>
       </form>
+
+      <p class="login__help">&#191;Problemas para acceder? Contacta al administrador del sistema.</p>
     </div>
   </main>
 

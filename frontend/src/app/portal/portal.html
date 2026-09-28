@@ -409,13 +409,27 @@
 
     @if (activeView() === 'inicio') {
 
-    <!-- Greeting -->
-    <section class="greeting">
-      <div class="greeting__text">
-        <span class="material-symbols-outlined greeting__icon">{{ greetingIcon }}</span>
-        <h2 class="greeting__title">{{ greeting }}, <strong>{{ currentUserFirstName }}</strong></h2>
+    <!-- Hero de bienvenida -->
+    <section class="hero">
+      <div class="hero__bg" aria-hidden="true"></div>
+      <div class="hero__body">
+        <span class="hero__eyebrow">
+          <span class="material-symbols-outlined">{{ greetingIcon }}</span>
+          {{ greetingDate }}
+        </span>
+        <h2 class="hero__title">{{ greeting }}, <strong>{{ currentUserFirstName }}</strong></h2>
+        <p class="hero__text">Tienes {{ apps().length }} aplicaciones disponibles. Entra a cualquiera con un clic, sin volver a iniciar sesión.</p>
       </div>
-      <p class="greeting__subtitle">{{ greetingDate }}</p>
+      <div class="hero__actions">
+        <button class="hero__btn hero__btn--solid" (click)="goToApps()">
+          <span class="material-symbols-outlined">grid_view</span> Explorar apps
+        </button>
+        @if (isAdmin) {
+          <a class="hero__btn" routerLink="/admin/estadisticas">
+            <span class="material-symbols-outlined">monitoring</span> Estadísticas generales
+          </a>
+        }
+      </div>
     </section>
     }
 
@@ -432,34 +446,34 @@
         <!-- KPIs -->
         <div class="dashboard__kpis">
           <div class="kpi">
-            <span class="material-symbols-outlined kpi__icon">group</span>
-            <span class="kpi__value">{{ s.summary.users_total }}</span>
             <span class="kpi__label">Usuarios</span>
+            <span class="kpi__value">{{ s.summary.users_total }}</span>
             <span class="kpi__hint">{{ s.summary.users_active }} activos · {{ s.summary.users_admins }} admin</span>
+            <span class="material-symbols-outlined kpi__icon">group</span>
           </div>
           <div class="kpi">
-            <span class="material-symbols-outlined kpi__icon">grid_view</span>
-            <span class="kpi__value">{{ s.summary.apps_active }}</span>
             <span class="kpi__label">Apps activas</span>
+            <span class="kpi__value">{{ s.summary.apps_active }}</span>
             <span class="kpi__hint">{{ s.summary.apps_total }} en total</span>
+            <span class="material-symbols-outlined kpi__icon">grid_view</span>
           </div>
           <div class="kpi">
-            <span class="material-symbols-outlined kpi__icon">key</span>
-            <span class="kpi__value">{{ s.summary.access_grants }}</span>
             <span class="kpi__label">Accesos otorgados</span>
+            <span class="kpi__value">{{ s.summary.access_grants }}</span>
             <span class="kpi__hint">usuarios × apps</span>
+            <span class="material-symbols-outlined kpi__icon">key</span>
           </div>
           <div class="kpi">
-            <span class="material-symbols-outlined kpi__icon">bolt</span>
-            <span class="kpi__value">{{ s.summary.sso_last_7d }}</span>
             <span class="kpi__label">Ingresos SSO (7d)</span>
+            <span class="kpi__value">{{ s.summary.sso_last_7d }}</span>
             <span class="kpi__hint">a apps externas</span>
+            <span class="material-symbols-outlined kpi__icon">bolt</span>
           </div>
           <div class="kpi">
-            <span class="material-symbols-outlined kpi__icon">login</span>
-            <span class="kpi__value">{{ s.summary.logins_last_7d }}</span>
             <span class="kpi__label">Inicios de sesión (7d)</span>
+            <span class="kpi__value">{{ s.summary.logins_last_7d }}</span>
             <span class="kpi__hint">{{ s.summary.logins_ok_last_7d }} exitosos</span>
+            <span class="material-symbols-outlined kpi__icon">login</span>
           </div>
         </div>
       }
@@ -532,80 +546,16 @@
     </section>
     }
 
-    <!-- Dashboard ejecutivo cruzado + presencia (solo admin) -->
+    <!-- Acceso a Estadísticas generales (las métricas por app viven en su propia página) -->
     @if (activeView() === 'inicio' && isAdmin) {
-      <div class="cross-grid">
-        <!-- Widget SIGCOM -->
-        @if (sigcomResumen(); as sc) {
-          <div class="cross-card">
-            <div class="cross-card__head">
-              <span class="material-symbols-outlined cross-card__icon" style="color:#2B6CB0">shopping_cart</span>
-              <span class="cross-card__title">SIGCOM</span>
-              <a href="javascript:void(0)" class="cross-card__link">Ver <span class="material-symbols-outlined">arrow_forward</span></a>
-            </div>
-            <div class="cross-card__metrics">
-              <div class="cross-metric">
-                <span class="cross-metric__val">{{ sc.pedidos_hoy }}</span>
-                <span class="cross-metric__label">Pedidos hoy</span>
-                <span class="cross-metric__delta" [class.cross-metric__delta--up]="sc.pedidos_hoy >= sc.pedidos_ayer">
-                  vs {{ sc.pedidos_ayer }} ayer
-                </span>
-              </div>
-              <div class="cross-metric">
-                <span class="cross-metric__val">{{ sc.cartera_pendiente }}</span>
-                <span class="cross-metric__label">Cartera pendiente</span>
-              </div>
-              <div class="cross-metric">
-                <span class="cross-metric__val">{{ sc.cotizaciones_abiertas }}</span>
-                <span class="cross-metric__label">Cotizaciones abiertas</span>
-              </div>
-            </div>
-          </div>
-        }
-
-        <!-- Widget SIGCOMPRO -->
-        @if (sigcomproResumen(); as sp) {
-          <div class="cross-card">
-            <div class="cross-card__head">
-              <span class="material-symbols-outlined cross-card__icon" style="color:#8B1A2B">local_shipping</span>
-              <span class="cross-card__title">SIGCOMPRO</span>
-            </div>
-            <div class="cross-card__metrics">
-              <div class="cross-metric">
-                <span class="cross-metric__val">{{ sp.pendientes }}</span>
-                <span class="cross-metric__label">Pendientes</span>
-              </div>
-              <div class="cross-metric cross-metric--warn">
-                <span class="cross-metric__val">{{ sp.atrasados }}</span>
-                <span class="cross-metric__label">Atrasados</span>
-              </div>
-              <div class="cross-metric">
-                <span class="cross-metric__val">{{ sp.despachados_hoy }}</span>
-                <span class="cross-metric__label">Despachados hoy</span>
-              </div>
-            </div>
-          </div>
-        }
-
-        <!-- Widget presencia -->
-        <div class="cross-card">
-          <div class="cross-card__head">
-            <span class="material-symbols-outlined cross-card__icon">timer</span>
-            <span class="cross-card__title">Presencia hoy</span>
-            <a routerLink="/admin/presencia" class="cross-card__link">Ver <span class="material-symbols-outlined">arrow_forward</span></a>
-          </div>
-          <div class="cross-card__metrics">
-            <div class="cross-metric">
-              <span class="cross-metric__val">{{ onlineCount }}</span>
-              <span class="cross-metric__label">Activos ahora</span>
-            </div>
-            <div class="cross-metric">
-              <span class="cross-metric__val">{{ presenceToday()?.by_user?.length ?? '—' }}</span>
-              <span class="cross-metric__label">Con registro hoy</span>
-            </div>
-          </div>
-        </div>
-      </div>
+      <a class="stats-cta" routerLink="/admin/estadisticas">
+        <span class="stats-cta__icon material-symbols-outlined">monitoring</span>
+        <span class="stats-cta__text">
+          <strong>Estadísticas generales</strong>
+          <small>Indicadores del día de SIGCOM, SIGCOMPRO, SIGROUTE, SIGNOM, SIGTRAZ, SIGCAN y más, en un solo lugar.</small>
+        </span>
+        <span class="material-symbols-outlined stats-cta__arrow">arrow_forward</span>
+      </a>
     }
 
     <!-- Gráficas de actividad (solo admin) -->

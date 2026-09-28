@@ -183,7 +183,7 @@ export type ChartCardState = 'ready' | 'loading' | 'empty' | 'error';
       }
       .cc__state-btn:hover {
         border-color: var(--color-accent);
-        background: rgba(87, 173, 49, 0.06);
+        background: rgba(47, 143, 78, 0.06);
       }
       .cc__state-btn .material-symbols-outlined {
         font-size: 18px;

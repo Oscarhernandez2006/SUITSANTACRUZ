@@ -273,6 +273,31 @@ export interface SigcomproResumen {
   despachados_hoy: number;
 }
 
+export interface CrossMetric {
+  key: string;
+  label: string;
+  value: number;
+  format?: 'number' | 'currency' | 'kg';
+  tone?: 'default' | 'warn' | 'good';
+  hint?: string;
+}
+
+export interface CrossApp {
+  slug: string;
+  name: string;
+  icon: string | null;
+  color: string | null;
+  logo: string | null;
+  url: string;
+  status: 'ok' | 'error' | 'unavailable';
+  metrics: CrossMetric[];
+}
+
+export interface CrossOverview {
+  generated_at: string;
+  apps: CrossApp[];
+}
+
 export interface ManagedUser {
   id: number;
   name: string;
@@ -562,5 +587,10 @@ export class AdminService {
 
   getSigcomproResumen(): Observable<SigcomproResumen> {
     return this.http.get<SigcomproResumen>('/api/admin/cross/sigcompro');
+  }
+
+  /** Indicadores del día de todas las apps conectadas (Estadísticas generales). */
+  getCrossOverview(): Observable<CrossOverview> {
+    return this.http.get<CrossOverview>('/api/admin/cross');
   }
 }

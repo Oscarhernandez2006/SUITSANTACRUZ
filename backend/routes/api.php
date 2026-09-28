@@ -131,6 +131,7 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::delete('/manage/applications/{application}', [AdminApplicationController::class, 'destroy']);
 
         // Resúmenes ejecutivos de apps externas (proxy con SSO secret)
+        Route::get('/cross', [CrossDashboardController::class, 'index']);
         Route::get('/cross/sigcom', [CrossDashboardController::class, 'sigcom']);
         Route::get('/cross/sigcompro', [CrossDashboardController::class, 'sigcompro']);
 

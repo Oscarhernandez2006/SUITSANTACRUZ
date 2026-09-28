@@ -44,6 +44,7 @@ export class Sidebar {
         {
           label: 'Monitoreo',
           items: [
+            { icon: 'monitoring', label: 'Estadísticas generales', route: '/admin/estadisticas' },
             { icon: 'timer', label: 'Presencia', route: '/admin/presencia' },
             { icon: 'devices', label: 'Sesiones', route: '/admin/sesiones' },
             { icon: 'history', label: 'Auditoría', route: '/admin/auditoria' },

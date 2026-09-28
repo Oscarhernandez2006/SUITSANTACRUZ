@@ -7,7 +7,7 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  background: linear-gradient(135deg, #12191f 0%, #1e2d2f 100%);
+  background: var(--gradient-forest);
   padding: 2rem;
 
   &__card {
@@ -34,7 +34,7 @@
     height: 42px;
     border-radius: 50%;
     border: 3px solid rgba(123, 196, 86, 0.25);
-    border-top-color: #7BC456;
+    border-top-color: #fff;
     animation: launch-spin 0.8s linear infinite;
   }
 
@@ -62,7 +62,7 @@
     margin-top: 0.4rem;
     padding: 0.65rem 1.4rem;
     border-radius: 10px;
-    background: linear-gradient(135deg, #7BC456 0%, #57AD31 100%);
+    background: var(--gradient-accent);
     color: #fff;
     text-decoration: none;
     font-size: 0.875rem;

@@ -180,7 +180,7 @@ interface Geometry {
 export class LineChart extends ResponsiveChart {
   readonly points = input<LinePoint[]>([]);
   readonly title = input<string>('Valor');
-  readonly color = input<string>('#57AD31');
+  readonly color = input<string>('#2f8f4e');
   readonly valueFormat = input<ChartValueFormat>('number');
   readonly height = input<number>(200);
   readonly dateIsDate = input<boolean>(true);
