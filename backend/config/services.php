@@ -54,9 +54,12 @@ return [
             'sigtraz' => env('SIGTRAZ_API_URL'),
             'creditos' => env('CREDITOS_API_URL'),
             'sigcan' => env('SIGCAN_API_URL', env('SIGCAN_URL')),
+            'sigroute' => env('SIGROUTE_API_URL', env('SIGROUTE_URL')),
+            'signom' => env('SIGNOM_API_URL', env('SIGNOM_URL')),
+            'liquidacion-drivin-web' => env('LIQUIDACION_DRIVIN_API_URL', env('LIQUIDACION_DRIVIN_URL')),
         ],
         // Slugs de apps que exponen la API de aprovisionamiento.
-        'apps' => ['sigcom', 'sigcompro', 'sigtraz', 'creditos', 'sigcan'],
+        'apps' => ['sigcom', 'sigcompro', 'sigtraz', 'creditos', 'sigcan', 'sigroute', 'signom', 'liquidacion-drivin-web'],
         'timeout' => (int) env('PROVISIONING_TIMEOUT', 8),
     ],
 
