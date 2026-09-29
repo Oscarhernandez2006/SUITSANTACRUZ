@@ -207,11 +207,17 @@
 .sdevice {
   display: inline-flex;
   align-items: center;
-  gap: 0.35rem;
+  gap: 0.55rem;
   color: var(--color-text-secondary);
   white-space: nowrap;
 
-  .material-symbols-outlined { font-size: 18px; color: var(--color-text-muted); }
+  > .material-symbols-outlined { font-size: 26px; color: var(--color-text-muted); }
+
+  &__logo { width: 26px; height: 26px; object-fit: contain; flex-shrink: 0; }
+  &__text { display: flex; flex-direction: column; line-height: 1.2; }
+  &__text strong { font-size: 0.82rem; color: var(--color-text-primary); }
+  &__text small { display: inline-flex; align-items: center; gap: 0.2rem; font-size: 0.72rem; color: var(--color-text-muted); }
+  &__text small .material-symbols-outlined { font-size: 14px; }
 }
 
 .smono { font-variant-numeric: tabular-nums; color: var(--color-text-secondary); white-space: nowrap; }

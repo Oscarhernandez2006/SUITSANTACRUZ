@@ -26,7 +26,7 @@ class PresenceController extends Controller
             'absent_delta' => 'required|integer|min:0|max:' . self::MAX_DELTA,
         ]);
 
-        $today = now()->toDateString();
+        $today = PresenceDay::today();
 
         $row = PresenceDay::firstOrNew([
             'user_id' => $user->id,
@@ -38,6 +38,9 @@ class PresenceController extends Controller
         $row->samples = (int) $row->samples + 1;
         $row->first_seen_at ??= now();
         $row->last_seen_at = now();
+        if ($validated['present_delta'] > 0) {
+            $row->last_present_at = now();
+        }
         $row->save();
 
         return response()->json([
@@ -53,12 +56,12 @@ class PresenceController extends Controller
     public function me(Request $request): JsonResponse
     {
         $user = $request->user();
-        $today = now()->toDateString();
+        $today = PresenceDay::today();
 
         $todayRow = PresenceDay::where('user_id', $user->id)->where('date', $today)->first();
 
         $week = PresenceDay::where('user_id', $user->id)
-            ->where('date', '>=', now()->subDays(6)->toDateString())
+            ->where('date', '>=', now(PresenceDay::TZ)->subDays(6)->toDateString())
             ->orderBy('date')
             ->get(['date', 'present_seconds', 'absent_seconds'])
             ->map(fn ($r) => [

@@ -40,13 +40,66 @@
         (ngModelChange)="searchQuery.set($event)"
       />
     </div>
-    <span class="toolbar__count">{{ filteredUsers().length }} usuarios</span>
-      @if (roleFilterName()) {
-        <button class="chip" (click)="clearRoleFilter()" title="Quitar filtro">
-          <span class="material-symbols-outlined">groups</span> {{ roleFilterName() }}
-          <span class="material-symbols-outlined">close</span>
-        </button>
-      }
+    <span class="toolbar__count">{{ filteredUsers().length }} de {{ users().length }} usuarios</span>
+  </div>
+
+  <div class="ufilters">
+    <label class="ufilter">
+      <span class="material-symbols-outlined">groups</span>
+      <select [ngModel]="roleFilter()" (ngModelChange)="setRoleFilter($event)">
+        <option [ngValue]="null">Todos los grupos</option>
+        <option [ngValue]="0">Sin grupo</option>
+        @for (role of roles(); track role.id) {
+          <option [ngValue]="role.id">{{ role.name }}</option>
+        }
+      </select>
+    </label>
+    <label class="ufilter">
+      <span class="material-symbols-outlined">toggle_on</span>
+      <select [ngModel]="statusFilter()" (ngModelChange)="statusFilter.set($event)">
+        <option value="all">Todos los estados</option>
+        <option value="active">Activos</option>
+        <option value="inactive">Inactivos</option>
+      </select>
+    </label>
+    <label class="ufilter">
+      <span class="material-symbols-outlined">shield_person</span>
+      <select [ngModel]="typeFilter()" (ngModelChange)="typeFilter.set($event)">
+        <option value="all">Todos los tipos</option>
+        <option value="admin">Administradores</option>
+        <option value="regular">No administradores</option>
+      </select>
+    </label>
+    <label class="ufilter">
+      <span class="material-symbols-outlined">face</span>
+      <select [ngModel]="faceFilter()" (ngModelChange)="faceFilter.set($event)">
+        <option value="all">Rostro: todos</option>
+        <option value="with">Con rostro registrado</option>
+        <option value="without">Sin rostro registrado</option>
+      </select>
+    </label>
+    <label class="ufilter">
+      <span class="material-symbols-outlined">cloud_sync</span>
+      <select [ngModel]="siesaFilter()" (ngModelChange)="siesaFilter.set($event)">
+        <option value="all">Siesa: todos</option>
+        <option value="with">Con credenciales Siesa</option>
+        <option value="without">Sin credenciales Siesa</option>
+      </select>
+    </label>
+    <label class="ufilter">
+      <span class="material-symbols-outlined">apps</span>
+      <select [ngModel]="appFilter()" (ngModelChange)="appFilter.set($event)">
+        <option [ngValue]="null">Con acceso a cualquier app</option>
+        @for (app of catalog(); track app.id) {
+          <option [ngValue]="app.id">Con acceso a {{ app.name }}</option>
+        }
+      </select>
+    </label>
+    @if (activeFilters() > 0) {
+      <button class="btn btn--ghost btn--sm" (click)="clearFilters()">
+        <span class="material-symbols-outlined">filter_alt_off</span> Limpiar ({{ activeFilters() }})
+      </button>
+    }
   </div>
 
   @if (loading()) {

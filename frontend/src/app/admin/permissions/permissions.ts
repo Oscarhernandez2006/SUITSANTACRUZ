@@ -346,6 +346,37 @@ export class Permissions implements OnInit {
     return this.appPerms().get(appId)?.has(key) ?? false;
   }
 
+  /** Módulo activo según el modo de la app (por compañía o global). */
+  modOn(appId: number, key: string): boolean {
+    return this.isMultiCompany(appId)
+      ? this.appCompanyHasPerm(appId, this.activeCompanyId(appId), key)
+      : this.appHasPerm(appId, key);
+  }
+
+  toggleMod(appId: number, key: string): void {
+    if (this.isMultiCompany(appId)) this.toggleAppCompanyPerm(appId, this.activeCompanyId(appId), key);
+    else this.toggleAppPerm(appId, key);
+  }
+
+  groupOnCount(appId: number, modules: { key: string }[]): number {
+    return modules.filter((m) => this.modOn(appId, m.key)).length;
+  }
+
+  modulesOnCount(appId: number): number {
+    return (this.catalogFor(appId)?.groups ?? []).reduce((n, g) => n + this.groupOnCount(appId, g.modules), 0);
+  }
+
+  modulesTotal(appId: number): number {
+    return (this.catalogFor(appId)?.groups ?? []).reduce((n, g) => n + g.modules.length, 0);
+  }
+
+  /** Activa o desactiva todos los módulos de un grupo. */
+  setGroup(appId: number, modules: { key: string }[], on: boolean): void {
+    for (const m of modules) {
+      if (this.modOn(appId, m.key) !== on) this.toggleMod(appId, m.key);
+    }
+  }
+
   toggleAppPerm(appId: number, key: string): void {
     if (!this.isGranted(appId)) return;
     const next = new Map(this.appPerms());

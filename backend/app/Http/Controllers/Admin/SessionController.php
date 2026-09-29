@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
 use App\Models\LoginLog;
+use App\Models\PresenceDay;
 use App\Models\User;
 use App\Support\AuditLogger;
 use Illuminate\Http\JsonResponse;
@@ -40,7 +41,17 @@ class SessionController extends Controller
             ->unique('user_id')
             ->keyBy('user_id');
 
+        // Última vez que la cámara detectó a cada usuario (sin depender del corte del día).
+        $presentAt = PresenceDay::query()
+            ->whereIn('user_id', $tokens->pluck('tokenable_id')->unique())
+            ->whereNotNull('last_present_at')
+            ->groupBy('user_id')
+            ->selectRaw('user_id, MAX(last_present_at) as last_present_at')
+            ->pluck('last_present_at', 'user_id')
+            ->map(fn ($v) => $v ? \Illuminate\Support\Carbon::parse($v, 'UTC')->toIso8601String() : null);
+
         $tokens = $tokens->map(fn (PersonalAccessToken $token) => array_merge($this->present($token), [
+            'last_present_at' => $presentAt[$token->tokenable_id] ?? null,
             'role' => $token->tokenable?->is_admin ? 'Administrador' : ($token->tokenable->role->name ?? null),
             'browser' => $logins[$token->tokenable_id]->browser ?? null,
             'os' => $logins[$token->tokenable_id]->os ?? null,

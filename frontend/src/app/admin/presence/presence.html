@@ -81,10 +81,12 @@
             <div class="stat-cards">
               <ng-template #deltaTpl let-d>
                 @if (d) {
-                  <span class="stat-card__delta stat-card__delta--{{ d.dir }}">
+                  <span class="stat-card__delta stat-card__delta--{{ d.dir }}" title="Comparado con el mes anterior">
                     <span class="material-symbols-outlined">{{ d.dir === 'up' ? 'arrow_upward' : d.dir === 'down' ? 'arrow_downward' : 'remove' }}</span>
-                    {{ d.text }} vs. mes anterior
+                    {{ d.text }} vs. mes ant.
                   </span>
+                } @else {
+                  <span class="stat-card__delta">Sin datos del mes anterior</span>
                 }
               </ng-template>
               <div class="stat-card">

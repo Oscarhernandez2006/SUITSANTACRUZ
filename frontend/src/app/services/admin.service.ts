@@ -170,6 +170,7 @@ export interface SessionEntry {
   device_type?: string | null;
   ip_address?: string | null;
   is_current?: boolean;
+  last_present_at?: string | null;
 }
 
 export interface ServiceHealth {

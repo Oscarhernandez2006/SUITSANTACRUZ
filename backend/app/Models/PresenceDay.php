@@ -7,10 +7,18 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 class PresenceDay extends Model
 {
+    /** El "día" de presencia se corta en hora de Colombia (la app corre en UTC). */
+    public const TZ = 'America/Bogota';
+
     protected $fillable = [
         'user_id', 'date', 'present_seconds', 'absent_seconds',
-        'samples', 'first_seen_at', 'last_seen_at',
+        'samples', 'first_seen_at', 'last_seen_at', 'last_present_at',
     ];
+
+    public static function today(): string
+    {
+        return now(self::TZ)->toDateString();
+    }
 
     protected function casts(): array
     {
@@ -21,6 +29,7 @@ class PresenceDay extends Model
             'samples' => 'integer',
             'first_seen_at' => 'datetime',
             'last_seen_at' => 'datetime',
+            'last_present_at' => 'datetime',
         ];
     }
 

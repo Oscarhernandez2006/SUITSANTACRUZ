@@ -29,8 +29,8 @@ class PresenceController extends Controller
     {
         $this->authorizeAdmin($request, 'presence', 'sessions', 'stats');
 
-        $from = $request->query('from', now()->toDateString());
-        $to = $request->query('to', now()->toDateString());
+        $from = $request->query('from', PresenceDay::today());
+        $to = $request->query('to', PresenceDay::today());
 
         $query = PresenceDay::query()
             ->with('user:id,name,cedula')
@@ -53,6 +53,7 @@ class PresenceController extends Controller
             'absent_seconds' => $r->absent_seconds,
             'first_seen_at' => $r->first_seen_at?->toIso8601String(),
             'last_seen_at' => $r->last_seen_at?->toIso8601String(),
+            'last_present_at' => $r->last_present_at?->toIso8601String(),
         ]);
 
         // Totales por usuario en el rango (para el resumen).
@@ -119,7 +120,7 @@ class PresenceController extends Controller
     {
         $this->authorizeAdmin($request, 'presence');
 
-        $month = $request->query('month', now()->format('Y-m'));
+        $month = $request->query('month', now(PresenceDay::TZ)->format('Y-m'));
         try {
             $start = Carbon::parse($month . '-01')->startOfMonth();
         } catch (\Throwable $e) {

@@ -183,164 +183,196 @@
         @if (activeConfigApp(); as app) {
           <div class="config-modal__backdrop" (click)="closeAppConfig()"></div>
           <div class="config-modal" role="dialog" aria-modal="true" [attr.aria-label]="'Configurar ' + app.name">
-            <div class="config-modal__header">
-              <div>
-                <h3 class="config-modal__title">Configuración de {{ app.name }}</h3>
-                <p class="config-modal__subtitle">Define rol y módulos para {{ selectedUser()!.name }}</p>
+            <div class="config-modal__header" [style.--app-color]="app.color || '#2f8f4e'">
+              <span class="config-modal__app-icon">
+                <span class="material-symbols-outlined">{{ app.icon || 'apps' }}</span>
+              </span>
+              <div class="config-modal__heading">
+                <h3 class="config-modal__title">Configurar {{ app.name }}</h3>
+                <p class="config-modal__subtitle">
+                  <span class="material-symbols-outlined">person</span>{{ selectedUser()!.name }}
+                  <span class="config-modal__sep">·</span>{{ app.category }}
+                </p>
               </div>
-              <button class="config-modal__close" (click)="closeAppConfig()">
+              <button class="config-modal__close" (click)="closeAppConfig()" title="Cerrar">
                 <span class="material-symbols-outlined">close</span>
               </button>
             </div>
 
             <div class="config-modal__body">
               @if (isLoadingCatalog(app.id)) {
-                <span class="perm-card__app-loading">Cargando roles y módulos de {{ app.name }}…</span>
-              } @else if (catalogFor(app.id); as cat) {
-                <div class="perm-card__role">
-                  <label class="perm-card__role-label" [attr.for]="'role-modal-' + app.id">
-                    Rol en {{ app.name }}
-                  </label>
-                  <select
-                    class="perm-card__role-select"
-                    [id]="'role-modal-' + app.id"
-                    [value]="appRole(app.id)"
-                    (change)="setAppRole(app.id, $any($event.target).value)"
-                  >
-                    <option value="">— Sin rol específico —</option>
-                    @for (role of cat.roles; track role) {
-                      <option [value]="role" [selected]="appRole(app.id) === role">{{ role }}</option>
-                    }
-                  </select>
+                <div class="cm-state">
+                  <span class="sc-spinner"></span>
+                  <strong>Cargando roles y módulos de {{ app.name }}…</strong>
                 </div>
+              } @else if (catalogFor(app.id); as cat) {
+                <!-- Rol -->
+                <section class="cm-section">
+                  <div class="cm-section__head">
+                    <span class="cm-section__icon material-symbols-outlined">badge</span>
+                    <div>
+                      <h4>Rol en {{ app.name }}</h4>
+                      <p>Define el perfil base del usuario dentro de la aplicación.</p>
+                    </div>
+                  </div>
+                  <div class="cm-role">
+                    <select
+                      class="cm-role__select"
+                      [id]="'role-modal-' + app.id"
+                      [value]="appRole(app.id)"
+                      (change)="setAppRole(app.id, $any($event.target).value)"
+                    >
+                      <option value="">— Sin rol específico —</option>
+                      @for (role of cat.roles; track role) {
+                        <option [value]="role" [selected]="appRole(app.id) === role">{{ role }}</option>
+                      }
+                    </select>
+                    <div class="cm-role__stat">
+                      <strong>{{ modulesOnCount(app.id) }}<small>/{{ modulesTotal(app.id) }}</small></strong>
+                      <span>módulos activos{{ isMultiCompany(app.id) ? ' en la compañía' : '' }}</span>
+                    </div>
+                  </div>
+                </section>
 
                 @if (isMultiCompany(app.id)) {
-                  <span class="perm-card__abilities-label">Compañías y código de vendedor:</span>
-                  <div class="company-access">
-                    @for (co of companiesFor(app.id); track co.id) {
-                      <div class="company-access__row">
-                        <div class="sc-toggle-row" style="flex:1">
-                          <span class="sc-toggle-row__label">{{ co.name }}</span>
-                          <label class="sc-switch">
+                  <!-- Compañías -->
+                  <section class="cm-section">
+                    <div class="cm-section__head">
+                      <span class="cm-section__icon material-symbols-outlined">domain</span>
+                      <div>
+                        <h4>Compañías y código de vendedor</h4>
+                        <p>Activa las compañías a las que tendrá acceso y su código de vendedor en cada una.</p>
+                      </div>
+                    </div>
+                    <div class="cm-companies">
+                      @for (co of companiesFor(app.id); track co.id) {
+                        <div class="cm-company" [class.cm-company--on]="isCompanyEnabled(app.id, co.id)">
+                          <div class="cm-company__top">
+                            <span class="material-symbols-outlined">apartment</span>
+                            <strong>{{ co.name }}</strong>
+                            <label class="sc-switch sc-switch--sm">
+                              <input
+                                type="checkbox"
+                                class="sc-switch__input"
+                                [checked]="isCompanyEnabled(app.id, co.id)"
+                                (change)="toggleCompany(app.id, co.id)"
+                              />
+                              <span class="sc-switch__track"><span class="sc-switch__thumb"></span></span>
+                            </label>
+                          </div>
+                          @if (isCompanyEnabled(app.id, co.id)) {
                             <input
-                              type="checkbox"
-                              class="sc-switch__input"
-                              [checked]="isCompanyEnabled(app.id, co.id)"
-                              (change)="toggleCompany(app.id, co.id)"
+                              class="cm-company__seller"
+                              type="text"
+                              placeholder="Código de vendedor"
+                              [value]="companySeller(app.id, co.id)"
+                              (input)="setCompanySeller(app.id, co.id, $any($event.target).value)"
                             />
-                            <span class="sc-switch__track"><span class="sc-switch__thumb"></span></span>
-                          </label>
+                          }
                         </div>
-                        @if (isCompanyEnabled(app.id, co.id)) {
-                          <input
-                            class="company-access__seller"
-                            type="text"
-                            placeholder="Código vendedor"
-                            [value]="companySeller(app.id, co.id)"
-                            (input)="setCompanySeller(app.id, co.id, $any($event.target).value)"
-                          />
+                      }
+                    </div>
+                  </section>
+                }
+
+                @if (isMultiCompany(app.id) && !enabledCompaniesFor(app.id).length) {
+                  <div class="cm-state cm-state--soft">
+                    <span class="material-symbols-outlined">info</span>
+                    <span>Habilita al menos una compañía para asignar módulos.</span>
+                  </div>
+                } @else if (cat.groups.length) {
+                  <!-- Módulos -->
+                  <section class="cm-section cm-section--flat">
+                    <div class="cm-section__head">
+                      <span class="cm-section__icon material-symbols-outlined">view_module</span>
+                      <div>
+                        <h4>Módulos y acciones</h4>
+                        <p>
+                          @if (isMultiCompany(app.id)) { Sin módulos marcados en una compañía, el usuario verá los de su rol allí. }
+                          @else { Activa un módulo para que lo vea; las acciones son permisos finos dentro del módulo. }
+                        </p>
+                      </div>
+                    </div>
+
+                    @if (isMultiCompany(app.id)) {
+                      <div class="cm-tabs">
+                        @for (co of enabledCompaniesFor(app.id); track co.id) {
+                          <button
+                            type="button"
+                            class="cm-tab"
+                            [class.cm-tab--on]="activeCompanyId(app.id) === co.id"
+                            (click)="setActiveCompany(app.id, co.id)"
+                          >
+                            <span class="material-symbols-outlined">apartment</span>{{ co.name }}
+                          </button>
                         }
                       </div>
                     }
-                  </div>
 
-                  @if (enabledCompaniesFor(app.id).length) {
-                    <div class="company-tabs">
-                      @for (co of enabledCompaniesFor(app.id); track co.id) {
-                        <button
-                          type="button"
-                          class="company-tab"
-                          [class.company-tab--on]="activeCompanyId(app.id) === co.id"
-                          (click)="setActiveCompany(app.id, co.id)"
-                        >
-                          {{ co.name }}
-                        </button>
-                      }
-                    </div>
-                    <span class="perm-card__abilities-label">Módulos en esta compañía:</span>
                     @for (group of cat.groups; track group.label) {
-                      <div class="perm-card__module-group">
-                        <span class="perm-card__module-group-label">{{ group.label }}</span>
-                        <div class="perm-card__modules">
+                      <div class="cm-group">
+                        <div class="cm-group__head">
+                          <strong>{{ group.label }}</strong>
+                          <span class="cm-group__count">{{ groupOnCount(app.id, group.modules) }} de {{ group.modules.length }}</span>
+                          <button type="button" class="cm-group__all" (click)="setGroup(app.id, group.modules, groupOnCount(app.id, group.modules) < group.modules.length)">
+                            {{ groupOnCount(app.id, group.modules) < group.modules.length ? 'Activar todos' : 'Quitar todos' }}
+                          </button>
+                        </div>
+                        <div class="cm-mods">
                           @for (mod of group.modules; track mod.key) {
-                            <div class="sc-toggle-row">
-                              <span class="sc-toggle-row__label">{{ mod.label }}</span>
-                              <label class="sc-switch">
-                                <input
-                                  type="checkbox"
-                                  class="sc-switch__input"
-                                  [checked]="appCompanyHasPerm(app.id, activeCompanyId(app.id), mod.key)"
-                                  (change)="toggleAppCompanyPerm(app.id, activeCompanyId(app.id), mod.key)"
-                                />
-                                <span class="sc-switch__track"><span class="sc-switch__thumb"></span></span>
+                            <div class="cm-mod" [class.cm-mod--on]="modOn(app.id, mod.key)">
+                              <label class="cm-mod__row">
+                                <span class="cm-mod__check material-symbols-outlined">{{ modOn(app.id, mod.key) ? 'check_circle' : 'radio_button_unchecked' }}</span>
+                                <span class="cm-mod__label">{{ mod.label }}</span>
+                                <span class="sc-switch sc-switch--sm">
+                                  <input
+                                    type="checkbox"
+                                    class="sc-switch__input"
+                                    [checked]="modOn(app.id, mod.key)"
+                                    (change)="toggleMod(app.id, mod.key)"
+                                  />
+                                  <span class="sc-switch__track"><span class="sc-switch__thumb"></span></span>
+                                </span>
                               </label>
+                              @if (!isMultiCompany(app.id) && mod.actions?.length && appHasPerm(app.id, mod.key)) {
+                                <div class="cm-acts">
+                                  @for (act of mod.actions; track act.key) {
+                                    <button
+                                      type="button"
+                                      class="cm-act"
+                                      [class.cm-act--on]="appHasPerm(app.id, act.key)"
+                                      (click)="toggleAppPerm(app.id, act.key)"
+                                    >
+                                      <span class="material-symbols-outlined">{{ appHasPerm(app.id, act.key) ? 'check' : 'add' }}</span>
+                                      {{ act.label }}
+                                    </button>
+                                  }
+                                </div>
+                              }
                             </div>
                           }
                         </div>
                       </div>
                     }
-                    <p class="perm-card__hint">
-                      Sin módulos marcados en una compañía, el usuario verá los de su rol allí.
-                    </p>
-                  } @else {
-                    <p class="perm-card__hint">Habilita al menos una compañía para asignar módulos.</p>
-                  }
-                } @else if (cat.groups.length) {
-                  <span class="perm-card__abilities-label">Módulos habilitados en {{ app.name }}:</span>
-                  @for (group of cat.groups; track group.label) {
-                    <div class="perm-card__module-group">
-                      <span class="perm-card__module-group-label">{{ group.label }}</span>
-                      <div class="perm-card__modules">
-                        @for (mod of group.modules; track mod.key) {
-                          <div class="module-item">
-                            <div class="sc-toggle-row">
-                              <span class="sc-toggle-row__label">{{ mod.label }}</span>
-                              <label class="sc-switch">
-                                <input
-                                  type="checkbox"
-                                  class="sc-switch__input"
-                                  [checked]="appHasPerm(app.id, mod.key)"
-                                  (change)="toggleAppPerm(app.id, mod.key)"
-                                />
-                                <span class="sc-switch__track"><span class="sc-switch__thumb"></span></span>
-                              </label>
-                            </div>
-                            @if (mod.actions?.length && appHasPerm(app.id, mod.key)) {
-                              <div class="module-actions">
-                                @for (act of mod.actions; track act.key) {
-                                  <div class="sc-toggle-row">
-                                    <span class="sc-toggle-row__label sc-toggle-row__label--action">{{ act.label }}</span>
-                                    <label class="sc-switch sc-switch--sm">
-                                      <input
-                                        type="checkbox"
-                                        class="sc-switch__input"
-                                        [checked]="appHasPerm(app.id, act.key)"
-                                        (change)="toggleAppPerm(app.id, act.key)"
-                                      />
-                                      <span class="sc-switch__track"><span class="sc-switch__thumb"></span></span>
-                                    </label>
-                                  </div>
-                                }
-                              </div>
-                            }
-                          </div>
-                        }
-                      </div>
-                    </div>
-                  }
-                  <p class="perm-card__hint">
-                    Marca el módulo para verlo; las acciones son permisos finos (crear, editar, anular…).
-                  </p>
+                  </section>
                 }
               } @else {
-                <span class="perm-card__app-loading">
-                  No se pudo cargar el catálogo de {{ app.name }}. Verifica que su backend esté desplegado y que el SSO_SHARED_SECRET coincida.
-                </span>
+                <div class="cm-state cm-state--error">
+                  <span class="material-symbols-outlined">cloud_off</span>
+                  <strong>No se pudo cargar el catálogo de {{ app.name }}</strong>
+                  <span>Verifica que su backend esté desplegado y que el SSO_SHARED_SECRET coincida.</span>
+                </div>
               }
             </div>
 
             <div class="config-modal__footer">
-              <button class="btn btn--secondary" (click)="closeAppConfig()">Listo</button>
+              <span class="config-modal__note">
+                <span class="material-symbols-outlined">info</span>
+                Los cambios se aplican al pulsar «Guardar cambios» en la página.
+              </span>
+              <button class="btn btn--primary" (click)="closeAppConfig()">
+                <span class="material-symbols-outlined">check</span> Listo
+              </button>
             </div>
           </div>
         }

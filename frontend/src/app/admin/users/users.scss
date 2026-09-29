@@ -39,6 +39,30 @@
   &__count { font-size: 0.8rem; color: var(--color-text-muted); font-weight: 600; }
 }
 
+.ufilters {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.5rem;
+  margin-bottom: 1rem;
+}
+
+.ufilter {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  height: 38px;
+  padding: 0 0.3rem 0 0.65rem;
+  border-radius: var(--radius-md);
+  border: 1px solid var(--color-border);
+  background: var(--color-white);
+  color: var(--color-text-muted);
+
+  .material-symbols-outlined { font-size: 18px; }
+  select { border: none; box-shadow: none !important; background: transparent; height: 100%; font-size: 0.82rem; font-weight: 600; color: var(--color-text-primary); cursor: pointer; max-width: 220px; }
+  &:focus-within { border-color: var(--color-accent); }
+}
+
 .search {
   display: flex;
   align-items: center;

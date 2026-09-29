@@ -103,19 +103,46 @@ export class UsersAdmin implements OnInit {
   readonly filteredUsers = computed(() => {
     const q = this.searchQuery().trim().toLowerCase();
     const roleId = this.roleFilter();
-    const byRole = roleId ? this.users().filter((u) => u.role_id === roleId) : this.users();
-    if (!q) return byRole;
-    return byRole.filter(
-      (u) =>
+    const status = this.statusFilter();
+    const type = this.typeFilter();
+    const face = this.faceFilter();
+    const siesa = this.siesaFilter();
+    const appId = this.appFilter();
+    return this.users().filter((u) => {
+      if (roleId === 0 && u.role_id) return false;
+      if (roleId && u.role_id !== roleId) return false;
+      if (status !== 'all' && u.is_active !== (status === 'active')) return false;
+      if (type !== 'all' && u.is_admin !== (type === 'admin')) return false;
+      if (face !== 'all' && !!u.has_face !== (face === 'with')) return false;
+      if (siesa !== 'all' && u.has_siesa !== (siesa === 'with')) return false;
+      if (appId && !u.application_ids.includes(appId)) return false;
+      return (
+        !q ||
         u.name.toLowerCase().includes(q) ||
         u.cedula.toLowerCase().includes(q) ||
         (u.email ?? '').toLowerCase().includes(q)
-    );
+      );
+    });
   });
 
-  /** Filtro por grupo (llega como ?grupo=ID desde la página de Grupos). */
+  /** Filtro por grupo (llega como ?grupo=ID desde la página de Grupos); 0 = sin grupo. */
   readonly roleFilter = signal<number | null>(null);
-  readonly roleFilterName = computed(() => this.roles().find((r) => r.id === this.roleFilter())?.name ?? null);
+  readonly statusFilter = signal<'all' | 'active' | 'inactive'>('all');
+  readonly typeFilter = signal<'all' | 'admin' | 'regular'>('all');
+  readonly faceFilter = signal<'all' | 'with' | 'without'>('all');
+  readonly siesaFilter = signal<'all' | 'with' | 'without'>('all');
+  readonly appFilter = signal<number | null>(null);
+
+  readonly activeFilters = computed(() =>
+    [
+      this.roleFilter() !== null,
+      this.statusFilter() !== 'all',
+      this.typeFilter() !== 'all',
+      this.faceFilter() !== 'all',
+      this.siesaFilter() !== 'all',
+      this.appFilter() !== null,
+    ].filter(Boolean).length,
+  );
 
   ngOnInit(): void {
     const grupo = Number(this.route.snapshot.queryParamMap.get('grupo'));
@@ -123,9 +150,18 @@ export class UsersAdmin implements OnInit {
     this.load();
   }
 
-  clearRoleFilter(): void {
-    this.roleFilter.set(null);
-    this.router.navigate([], { queryParams: {} });
+  setRoleFilter(id: number | null): void {
+    this.roleFilter.set(id);
+    this.router.navigate([], { queryParams: id ? { grupo: id } : {} });
+  }
+
+  clearFilters(): void {
+    this.setRoleFilter(null);
+    this.statusFilter.set('all');
+    this.typeFilter.set('all');
+    this.faceFilter.set('all');
+    this.siesaFilter.set('all');
+    this.appFilter.set(null);
   }
 
   private load(): void {

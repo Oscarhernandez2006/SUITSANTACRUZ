@@ -114,17 +114,26 @@
                     </td>
                     <td>
                       <span class="sdevice">
-                        <span class="material-symbols-outlined">{{ deviceIcon(s) }}</span>
-                        {{ s.os || '—' }} · {{ s.browser || '—' }}
+                        @if (logo(s); as url) {
+                          <img class="sdevice__logo" [src]="url" [alt]="s.browser" [title]="s.browser" (error)="onLogoError(url)" />
+                        } @else {
+                          <span class="material-symbols-outlined" [title]="s.browser || 'Navegador desconocido'">public</span>
+                        }
+                        <span class="sdevice__text">
+                          <strong>{{ s.browser || 'Desconocido' }}</strong>
+                          <small>
+                            <span class="material-symbols-outlined">{{ deviceIcon(s) }}</span>{{ s.os || '—' }}
+                          </small>
+                        </span>
                       </span>
                     </td>
                     <td class="smono">{{ s.ip_address || '—' }}</td>
                     <td class="smono">{{ s.created_at ? (s.created_at | date:'dd/MM HH:mm') : '—' }}</td>
                     <td><span class="sago" [class.sago--on]="isActive(s)"><i></i>{{ ago(s.last_used_at) }}</span></td>
                     <td>
-                      <span class="scam" [class.scam--on]="onCamera(s.user_id)">
-                        <span class="material-symbols-outlined">{{ onCamera(s.user_id) ? 'videocam' : 'videocam_off' }}</span>
-                        {{ onCamera(s.user_id) ? 'En cámara' : 'Ausente' }}
+                      <span class="scam" [class.scam--on]="onCamera(s)">
+                        <span class="material-symbols-outlined">{{ onCamera(s) ? 'videocam' : 'videocam_off' }}</span>
+                        {{ onCamera(s) ? 'En cámara' : 'Ausente' }}
                       </span>
                     </td>
                     <td class="sactions">

@@ -440,23 +440,30 @@ class AuthController extends Controller
     {
         $ua = $request->userAgent() ?? '';
 
-        // Detect browser
+        // Detect browser (el orden importa: muchos UAs incluyen "Chrome" o "Safari").
         $browser = 'Desconocido';
-        if (preg_match('/Edg\//i', $ua)) $browser = 'Edge';
-        elseif (preg_match('/OPR|Opera/i', $ua)) $browser = 'Opera';
-        elseif (preg_match('/Chrome/i', $ua)) $browser = 'Chrome';
-        elseif (preg_match('/Firefox/i', $ua)) $browser = 'Firefox';
+        if (preg_match('/Edg(e|A|iOS)?\//i', $ua)) $browser = 'Edge';
+        elseif (preg_match('/SamsungBrowser/i', $ua)) $browser = 'Samsung Internet';
+        elseif (preg_match('/YaBrowser/i', $ua)) $browser = 'Yandex';
+        elseif (preg_match('/Vivaldi/i', $ua)) $browser = 'Vivaldi';
+        elseif (preg_match('/UCBrowser/i', $ua)) $browser = 'UC Browser';
+        elseif (preg_match('/DuckDuckGo/i', $ua)) $browser = 'DuckDuckGo';
+        elseif (preg_match('/OPR|Opera|OPT\//i', $ua)) $browser = 'Opera';
+        elseif (preg_match('/Brave/i', $ua)) $browser = 'Brave';
+        elseif (preg_match('/Chrome|CriOS/i', $ua)) $browser = 'Chrome';
+        elseif (preg_match('/Firefox|FxiOS/i', $ua)) $browser = 'Firefox';
         elseif (preg_match('/Safari/i', $ua)) $browser = 'Safari';
         elseif (preg_match('/MSIE|Trident/i', $ua)) $browser = 'Internet Explorer';
 
-        // Detect OS
+        // Detect OS (Android antes que Linux e iOS antes que macOS: sus UAs los contienen).
         $os = 'Desconocido';
         if (preg_match('/Windows NT 10/i', $ua)) $os = 'Windows 10/11';
         elseif (preg_match('/Windows/i', $ua)) $os = 'Windows';
-        elseif (preg_match('/Mac OS X/i', $ua)) $os = 'macOS';
-        elseif (preg_match('/Linux/i', $ua)) $os = 'Linux';
         elseif (preg_match('/Android/i', $ua)) $os = 'Android';
-        elseif (preg_match('/iPhone|iPad/i', $ua)) $os = 'iOS';
+        elseif (preg_match('/iPhone|iPad|iPod/i', $ua)) $os = 'iOS';
+        elseif (preg_match('/Mac OS X/i', $ua)) $os = 'macOS';
+        elseif (preg_match('/CrOS/i', $ua)) $os = 'ChromeOS';
+        elseif (preg_match('/Linux/i', $ua)) $os = 'Linux';
 
         // Detect device type
         $deviceType = 'Desktop';
