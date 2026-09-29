@@ -31,6 +31,9 @@ export interface AdminUser {
   email: string;
   is_active: boolean;
   is_admin: boolean;
+  role_name?: string | null;
+  role_color?: string | null;
+  applications_count?: number;
 }
 
 export interface CatalogApplication {
@@ -108,8 +111,8 @@ export interface Role {
   description: string | null;
   color: string | null;
   is_admin: boolean;
-  app_ids: number[];
-  abilities: Record<string, string[]>;
+  is_system: boolean;
+  permissions: string[];
   users_count: number;
 }
 
@@ -118,9 +121,20 @@ export type RolePayload = {
   description: string | null;
   color: string | null;
   is_admin: boolean;
-  app_ids: number[];
-  abilities: Record<string, string[]>;
+  permissions: string[];
 };
+
+export interface SuiteAction { key: string; label: string; }
+export interface SuiteModule {
+  key: string;
+  label: string;
+  icon: string;
+  description: string;
+  locked?: boolean;
+  actions: SuiteAction[];
+}
+export interface SuiteModuleGroup { group: string; modules: SuiteModule[]; }
+export interface SuiteCatalog { groups: SuiteModuleGroup[]; defaults: string[]; }
 
 export interface AuditEntry {
   id: number;
@@ -150,6 +164,12 @@ export interface SessionEntry {
   last_used_at: string | null;
   created_at: string | null;
   current?: boolean;
+  role?: string | null;
+  browser?: string | null;
+  os?: string | null;
+  device_type?: string | null;
+  ip_address?: string | null;
+  is_current?: boolean;
 }
 
 export interface ServiceHealth {
@@ -196,6 +216,9 @@ export interface PresenceRankingRow {
   user_id: number;
   user: string;
   cedula: string | null;
+  role_name: string | null;
+  role_color: string | null;
+  has_consent: boolean;
   days: number;
   present_hours: number;
   target_hours: number;
@@ -205,19 +228,22 @@ export interface PresenceRankingRow {
   score: number;
 }
 
+export interface PresenceSummary {
+  users: number;
+  total_hours: number;
+  total_days: number;
+  avg_daily_hours: number;
+  avg_compliance: number;
+  avg_consistency: number;
+  top_user: string | null;
+  top_score: number | null;
+}
+
 export interface PresenceMonthly {
   month: string;
   target_daily_hours: number;
-  summary: {
-    users: number;
-    total_hours: number;
-    total_days: number;
-    avg_daily_hours: number;
-    avg_compliance: number;
-    avg_consistency: number;
-    top_user: string | null;
-    top_score: number | null;
-  };
+  summary: PresenceSummary;
+  previous_summary?: PresenceSummary;
   ranking: PresenceRankingRow[];
 }
 
@@ -426,6 +452,10 @@ export class AdminService {
     return this.http.get<Role[]>('/api/admin/roles');
   }
 
+  getRoleCatalog(): Observable<SuiteCatalog> {
+    return this.http.get<SuiteCatalog>('/api/admin/roles/catalog');
+  }
+
   createRole(payload: RolePayload): Observable<Role> {
     return this.http.post<Role>('/api/admin/roles', payload);
   }
@@ -445,6 +475,10 @@ export class AdminService {
 
   getAuditActions(): Observable<string[]> {
     return this.http.get<string[]>('/api/admin/audit/actions');
+  }
+
+  exportAudit(params: Record<string, string>): Observable<Blob> {
+    return this.http.get('/api/admin/audit/export', { params: params as never, responseType: 'blob' });
   }
 
   // ---- Sesiones activas ----
@@ -486,6 +520,10 @@ export class AdminService {
 
   getPresenceMonthly(month: string): Observable<PresenceMonthly> {
     return this.http.get<PresenceMonthly>('/api/admin/presence/monthly', { params: { month } as never });
+  }
+
+  revokePresenceConsent(userId: number): Observable<{ message: string }> {
+    return this.http.delete<{ message: string }>(`/api/admin/presence/consent/${userId}`);
   }
 
   // ---- Gestión del catálogo de aplicaciones (CRUD) ----

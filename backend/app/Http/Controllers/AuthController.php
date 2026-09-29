@@ -207,6 +207,8 @@ class AuthController extends Controller
                 'cedula' => $user->cedula,
                 'email' => $user->email,
                 'is_admin' => $user->is_admin,
+                'role_name' => $user->role?->name,
+                'permissions' => $user->suitePermissions(),
             ],
             // Se envía el estado de Siesa aquí para evitar una petición extra al cargar el portal.
             'siesa' => $this->siesaStatus($user),
@@ -273,6 +275,8 @@ class AuthController extends Controller
             'cedula' => $user->cedula,
             'email' => $user->email,
             'is_admin' => $user->is_admin,
+            'role_name' => $user->role?->name,
+            'permissions' => $user->suitePermissions(),
             'siesa' => $this->siesaStatus($user),
         ]);
     }

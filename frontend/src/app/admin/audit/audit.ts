@@ -6,6 +6,7 @@ import { Sidebar } from '../../shared/sidebar/sidebar';
 import { FilterBar } from '../../shared/admin-ui/filter-bar/filter-bar';
 import { DataSurface } from '../../shared/admin-ui/data-surface/data-surface';
 import { AdminService, AuditEntry, Paginated } from '../../services/admin.service';
+import { AuthService } from '../../services/auth.service';
 
 @Component({
   selector: 'app-audit',
@@ -16,6 +17,10 @@ import { AdminService, AuditEntry, Paginated } from '../../services/admin.servic
 export class Audit implements OnInit {
   private adminService = inject(AdminService);
   private router = inject(Router);
+  private auth = inject(AuthService);
+
+  readonly canExport = this.auth.can('audit.export');
+  readonly exporting = signal(false);
 
   readonly page = signal<Paginated<AuditEntry> | null>(null);
   readonly actions = signal<string[]>([]);
@@ -35,17 +40,38 @@ export class Audit implements OnInit {
   load(page = 1): void {
     this.loading.set(true);
     this.currentPage.set(page);
-    const params: Record<string, string | number> = { page, per_page: 25 };
-    if (this.filterAction()) params['action'] = this.filterAction();
-    if (this.search()) params['q'] = this.search();
-    if (this.from()) params['from'] = this.from();
-    if (this.to()) params['to'] = this.to();
+    const params: Record<string, string | number> = { page, per_page: 25, ...this.filterParams() };
     this.adminService.getAudit(params).subscribe({
       next: (res) => {
         this.page.set(res);
         this.loading.set(false);
       },
       error: () => this.loading.set(false),
+    });
+  }
+
+  private filterParams(): Record<string, string> {
+    const params: Record<string, string> = {};
+    if (this.filterAction()) params['action'] = this.filterAction();
+    if (this.search()) params['q'] = this.search();
+    if (this.from()) params['from'] = this.from();
+    if (this.to()) params['to'] = this.to();
+    return params;
+  }
+
+  exportCsv(): void {
+    this.exporting.set(true);
+    this.adminService.exportAudit(this.filterParams()).subscribe({
+      next: (blob) => {
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `auditoria-${new Date().toLocaleDateString('en-CA')}.csv`;
+        a.click();
+        URL.revokeObjectURL(url);
+        this.exporting.set(false);
+      },
+      error: () => this.exporting.set(false),
     });
   }
 
@@ -74,6 +100,8 @@ export class Audit implements OnInit {
       'role.updated': 'Rol actualizado',
       'role.deleted': 'Rol eliminado',
       'session.revoked': 'Sesión revocada',
+      'presence.consent_revoked': 'Consentimiento de cámara revocado',
+      'users.imported': 'Usuarios importados',
     };
     return map[action] ?? action;
   }

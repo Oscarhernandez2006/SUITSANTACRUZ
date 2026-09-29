@@ -2,6 +2,7 @@ import { Component, OnInit, inject } from '@angular/core';
 import { RouterOutlet } from '@angular/router';
 import { TopNav } from '../top-nav/top-nav';
 import { PresenceService } from '../../services/presence.service';
+import { AuthService } from '../../services/auth.service';
 
 /** Layout persistente: el nav se monta una sola vez y no se recrea al navegar entre páginas. */
 @Component({
@@ -24,8 +25,13 @@ import { PresenceService } from '../../services/presence.service';
 })
 export class Shell implements OnInit {
   readonly presence = inject(PresenceService);
+  private auth = inject(AuthService);
 
   ngOnInit(): void {
+    // Permisos siempre frescos: un cambio de grupo aplica al recargar cualquier página.
+    if (localStorage.getItem('sc_tools_token')) {
+      this.auth.refreshUser();
+    }
     // Monitoreo global: arranca al entrar a cualquier página autenticada (no
     // solo el dashboard) y sobrevive a recargas/navegación. Idempotente.
     if (localStorage.getItem('sc_tools_token')) {

@@ -18,10 +18,12 @@
       <p class="page-head__subtitle">Gestiona los roles y permisos de acceso por módulo en cada aplicación</p>
     </div>
   </div>
-  <button class="btn btn--ghost perm-head__import" [disabled]="importing()" (click)="importFromApps()">
+  @if (canImport) {
+  <button class="btn btn--secondary perm-head__import" [disabled]="importing()" (click)="importFromApps()">
     <span class="material-symbols-outlined">cloud_download</span>
     {{ importing() ? 'Importando...' : 'Importar desde apps' }}
   </button>
+  }
 </div>
 <div class="layout">
   <!-- Lista de usuarios -->
@@ -50,14 +52,17 @@
             <span class="user-item__avatar">{{ userInitials(user) }}</span>
             <span class="user-item__info">
               <span class="user-item__name">{{ user.name }}</span>
-              <span class="user-item__cedula">CC {{ user.cedula }}</span>
+              <span class="user-item__cedula">CC {{ user.cedula }} · {{ user.applications_count ?? 0 }} apps</span>
             </span>
             @if (user.is_admin) {
               <span class="user-item__badge user-item__badge--admin">Admin</span>
+            } @else if (user.role_name) {
+              <span class="user-item__badge user-item__badge--role">{{ user.role_name }}</span>
             }
             @if (!user.is_active) {
               <span class="user-item__badge user-item__badge--inactive">Inactivo</span>
             }
+            <span class="material-symbols-outlined user-item__chev">chevron_right</span>
           </button>
         } @empty {
           <div class="users__placeholder">No se encontraron usuarios</div>
@@ -80,17 +85,48 @@
           <span class="access__user-avatar">{{ userInitials(selectedUser()!) }}</span>
           <div>
             <h2 class="access__user-name">{{ selectedUser()!.name }}</h2>
-            <span class="access__user-meta">CC {{ selectedUser()!.cedula }} · {{ selectedUser()!.email }}</span>
+            <div class="access__badges">
+              @if (selectedUser()!.is_admin) { <span class="abadge abadge--admin">Administrador</span> }
+              @if (selectedUser()!.role_name) { <span class="abadge">Grupo: {{ selectedUser()!.role_name }}</span> }
+              <span class="abadge" [class.abadge--off]="!selectedUser()!.is_active">{{ selectedUser()!.is_active ? 'Activo' : 'Inactivo' }}</span>
+            </div>
+            <span class="access__user-meta">CC {{ selectedUser()!.cedula }}{{ selectedUser()!.email ? ' · ' + selectedUser()!.email : '' }}</span>
           </div>
         </div>
-        <span class="access__counter">{{ grantedCount() }} de {{ applications().length }} apps</span>
       </div>
+
+      <div class="access__stats">
+        <div class="astat">
+          <span class="material-symbols-outlined">grid_view</span>
+          <div><strong>{{ grantedCount() }}<small> / {{ applications().length }}</small></strong><span>Aplicaciones asignadas</span></div>
+        </div>
+        <div class="astat">
+          <span class="material-symbols-outlined">tune</span>
+          <div><strong>{{ configuredCount() }}</strong><span>Con rol configurado en la app</span></div>
+        </div>
+        <div class="astat">
+          <span class="material-symbols-outlined">bolt</span>
+          <div><strong>{{ ssoCount() }}</strong><span>Con inicio automático (SSO)</span></div>
+        </div>
+      </div>
+
+      <div class="access__tabs">
+        <button class="atab" [class.atab--on]="appTab() === 'all'" (click)="appTab.set('all')">Todas las aplicaciones <span>{{ applications().length }}</span></button>
+        <button class="atab" [class.atab--on]="appTab() === 'granted'" (click)="appTab.set('granted')">Asignadas <span>{{ grantedCount() }}</span></button>
+        <div class="access__app-search">
+          <span class="material-symbols-outlined">search</span>
+          <input type="search" placeholder="Buscar aplicación..." [ngModel]="appSearch()" (ngModelChange)="appSearch.set($event)" />
+        </div>
+      </div>
+      @if (!canEdit) {
+        <p class="access__readonly"><span class="material-symbols-outlined">visibility</span> Solo lectura: tu grupo no tiene permiso para asignar accesos.</p>
+      }
 
       @if (loadingAccess()) {
         <div class="sc-loading"><span class="sc-spinner"></span><span>Cargando permisos...</span></div>
       } @else {
         <div class="access__grid">
-          @for (app of applications(); track app.id) {
+          @for (app of visibleApps(); track app.id) {
             <div
               class="perm-card"
               [class.perm-card--on]="isGranted(app.id)"
@@ -113,22 +149,26 @@
                     type="checkbox"
                     class="switch__input"
                     [checked]="isGranted(app.id)"
+                    [disabled]="!canEdit"
                     (change)="toggleApp(app.id)"
                   />
                   <span class="switch__track"><span class="switch__thumb"></span></span>
                 </span>
               </div>
 
-              @if (isGranted(app.id) && isProvisionable(app)) {
+              @if (canEdit && isGranted(app.id) && isProvisionable(app)) {
                 <button class="perm-card__configure" (click)="openAppConfig(app, $event)">
                   <span class="material-symbols-outlined">tune</span>
                   Configurar rol y permisos
                 </button>
               }
             </div>
+          } @empty {
+            <div class="access__none">No hay aplicaciones que coincidan.</div>
           }
         </div>
 
+        @if (canEdit) {
         <div class="access__actions">
           <button class="btn btn--ghost" [disabled]="!hasChanges() || saving()" (click)="resetChanges()">
             Descartar cambios
@@ -138,6 +178,7 @@
             {{ saving() ? 'Guardando...' : 'Guardar cambios' }}
           </button>
         </div>
+        }
 
         @if (activeConfigApp(); as app) {
           <div class="config-modal__backdrop" (click)="closeAppConfig()"></div>

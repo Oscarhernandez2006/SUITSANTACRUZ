@@ -205,7 +205,7 @@
   </div>
 }
 
-@if (isAdmin && appModalOpen()) {
+@if (canManageApps && appModalOpen()) {
   <div class="app-modal-backdrop" (click)="closeAppModal()"></div>
   <div class="app-modal" role="dialog">
     <div class="app-modal__header">
@@ -351,7 +351,7 @@
     </div>
 
     <div class="app-modal__footer">
-      @if (appEditing()) {
+      @if (appEditing() && canDeleteApp) {
         <button class="btn btn--danger" (click)="askDeleteApp()" [disabled]="appSaving()">
           <span class="material-symbols-outlined">delete</span> Eliminar
         </button>
@@ -424,7 +424,7 @@
         <button class="hero__btn hero__btn--solid" (click)="goToApps()">
           <span class="material-symbols-outlined">grid_view</span> Explorar apps
         </button>
-        @if (isAdmin) {
+        @if (canGeneralStats) {
           <a class="hero__btn" routerLink="/admin/estadisticas">
             <span class="material-symbols-outlined">monitoring</span> Estadísticas generales
           </a>
@@ -434,7 +434,7 @@
     }
 
     <!-- Dashboard de administración (solo admin) -->
-    @if (activeView() === 'inicio' && isAdmin) {
+    @if (activeView() === 'inicio' && canAdminStats) {
     <section class="dashboard">
       @if (statsLoading()) {
         <div class="dashboard__kpis">
@@ -547,7 +547,7 @@
     }
 
     <!-- Acceso a Estadísticas generales (las métricas por app viven en su propia página) -->
-    @if (activeView() === 'inicio' && isAdmin) {
+    @if (activeView() === 'inicio' && canGeneralStats) {
       <a class="stats-cta" routerLink="/admin/estadisticas">
         <span class="stats-cta__icon material-symbols-outlined">monitoring</span>
         <span class="stats-cta__text">
@@ -559,7 +559,7 @@
     }
 
     <!-- Gráficas de actividad (solo admin) -->
-    @if (activeView() === 'inicio' && isAdmin) {
+    @if (activeView() === 'inicio' && canAdminStats) {
       <section class="dashboard">
         <div class="dashboard__grid">
           <!-- Tendencia de ingresos -->

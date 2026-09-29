@@ -31,8 +31,6 @@ export class CommandPalette implements OnInit {
 
   private baseItems: PaletteItem[] = [];
 
-  get isAdmin(): boolean { return !!this.authService.currentUser()?.is_admin; }
-
   readonly results = computed<PaletteItem[]>(() => {
     const q = this.query().trim().toLowerCase();
     if (!q) return this.baseItems.slice(0, 8);
@@ -51,15 +49,18 @@ export class CommandPalette implements OnInit {
       { icon: 'history', label: 'Mi actividad', sub: 'Historial de accesos', action: nav('/mi-actividad') },
     ];
 
-    if (this.isAdmin) {
-      this.baseItems.push(
-        { icon: 'group', label: 'Usuarios', sub: 'Gestión de usuarios', action: nav('/admin/usuarios') },
-        { icon: 'admin_panel_settings', label: 'Permisos', sub: 'Roles y permisos', action: nav('/admin/permisos') },
-        { icon: 'campaign', label: 'Anuncios', sub: 'Comunicados internos', action: nav('/admin/anuncios') },
-        { icon: 'history', label: 'Auditoría', sub: 'Bitácora de cambios', action: nav('/admin/auditoria') },
-        { icon: 'timer', label: 'Presencia', sub: 'Monitor de presencia', action: nav('/admin/presencia') },
-      );
-    }
+    const can = (p: string) => this.authService.can(p);
+    const adminItems: (PaletteItem & { perm: string })[] = [
+      { perm: 'users', icon: 'group', label: 'Usuarios', sub: 'Gestión de usuarios', action: nav('/admin/usuarios') },
+      { perm: 'roles', icon: 'groups', label: 'Grupos', sub: 'Grupos de acceso', action: nav('/admin/roles') },
+      { perm: 'permissions', icon: 'admin_panel_settings', label: 'Permisos', sub: 'Accesos a aplicaciones', action: nav('/admin/permisos') },
+      { perm: 'announcements', icon: 'campaign', label: 'Anuncios', sub: 'Comunicados internos', action: nav('/admin/anuncios') },
+      { perm: 'stats', icon: 'monitoring', label: 'Estadísticas generales', sub: 'Indicadores de todas las apps', action: nav('/admin/estadisticas') },
+      { perm: 'presence', icon: 'timer', label: 'Presencia', sub: 'Monitor de presencia', action: nav('/admin/presencia') },
+      { perm: 'sessions', icon: 'devices', label: 'Sesiones', sub: 'Sesiones activas', action: nav('/admin/sesiones') },
+      { perm: 'audit', icon: 'history', label: 'Auditoría', sub: 'Bitácora de cambios', action: nav('/admin/auditoria') },
+    ];
+    this.baseItems.push(...adminItems.filter((i) => can(i.perm)).map(({ perm: _perm, ...item }) => item));
 
     // Load apps dynamically
     this.appService.getApplications().subscribe({

@@ -20,10 +20,12 @@
       </div>
     </div>
     <div class="page-head__actions">
+      @if (can('users.create')) {
       <button class="btn btn--primary" (click)="openCreate()">
         <span class="material-symbols-outlined">person_add</span>
         Nuevo usuario
       </button>
+      }
     </div>
   </div>
 
@@ -39,6 +41,12 @@
       />
     </div>
     <span class="toolbar__count">{{ filteredUsers().length }} usuarios</span>
+      @if (roleFilterName()) {
+        <button class="chip" (click)="clearRoleFilter()" title="Quitar filtro">
+          <span class="material-symbols-outlined">groups</span> {{ roleFilterName() }}
+          <span class="material-symbols-outlined">close</span>
+        </button>
+      }
   </div>
 
   @if (loading()) {
@@ -107,17 +115,21 @@
               <td class="users-table__center ucell__mono">{{ user.application_ids.length }}</td>
               <td>
                 <div class="ucell__actions">
-                  @if (!user.is_admin) {
+                  @if (!user.is_admin && can('users.face')) {
                     <button class="icon-btn" (click)="openFaceModal(user)" title="Gestionar rostro (2FA)">
                       <span class="material-symbols-outlined">face</span>
                     </button>
                   }
+                  @if (can('users.edit') && (fullAdmin || !user.is_admin)) {
                   <button class="icon-btn" (click)="openEdit(user)" title="Editar">
                     <span class="material-symbols-outlined">edit</span>
                   </button>
+                  }
+                  @if (can('users.delete') && (fullAdmin || !user.is_admin)) {
                   <button class="icon-btn icon-btn--danger" (click)="askDelete(user)" title="Eliminar">
                     <span class="material-symbols-outlined">delete</span>
                   </button>
+                  }
                 </div>
               </td>
             </tr>
@@ -205,24 +217,28 @@
       </div>
 
       <div class="field">
-        <label class="field__label">Rol (aplica su preset de acceso al crear)</label>
+        <label class="field__label">Grupo de acceso</label>
         <select class="field__input" [ngModel]="form().role_id" (ngModelChange)="updateField('role_id', $event ? +$event : null)">
-          <option [ngValue]="null">Sin rol</option>
+          <option [ngValue]="null">Sin grupo</option>
           @for (role of roles(); track role.id) {
-            <option [ngValue]="role.id">{{ role.name }}</option>
+            @if (fullAdmin || !role.is_admin) {
+              <option [ngValue]="role.id">{{ role.name }}</option>
+            }
           }
         </select>
       </div>
 
       <div class="toggles">
+        @if (fullAdmin) {
         <label class="toggle">
           <input type="checkbox" [ngModel]="form().is_admin" (ngModelChange)="updateField('is_admin', $event)" />
           <span class="toggle__box"></span>
           <span class="toggle__text">
             <strong>Administrador</strong>
-            <small>Puede gestionar usuarios, apps y permisos.</small>
+            <small>Acceso total a todos los módulos de la Suite.</small>
           </span>
         </label>
+        }
         <label class="toggle">
           <input type="checkbox" [ngModel]="form().is_active" (ngModelChange)="updateField('is_active', $event)" />
           <span class="toggle__box"></span>

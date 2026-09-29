@@ -7,7 +7,10 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class Role extends Model
 {
-    protected $fillable = ['name', 'slug', 'description', 'color', 'is_admin', 'app_ids', 'abilities'];
+    /** Grupos base que no se pueden eliminar. */
+    public const SYSTEM_SLUGS = ['administrador', 'normal'];
+
+    protected $fillable = ['name', 'slug', 'description', 'color', 'is_admin', 'app_ids', 'abilities', 'permissions'];
 
     protected function casts(): array
     {
@@ -15,7 +18,13 @@ class Role extends Model
             'is_admin' => 'boolean',
             'app_ids' => 'array',
             'abilities' => 'array',
+            'permissions' => 'array',
         ];
+    }
+
+    public function isSystem(): bool
+    {
+        return in_array($this->slug, self::SYSTEM_SLUGS, true);
     }
 
     public function users(): HasMany

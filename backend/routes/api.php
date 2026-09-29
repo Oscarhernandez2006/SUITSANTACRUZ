@@ -84,6 +84,7 @@ Route::middleware('auth:sanctum')->group(function () {
         // Bitácora de auditoría
         Route::get('/audit', [AuditController::class, 'index']);
         Route::get('/audit/actions', [AuditController::class, 'actions']);
+        Route::get('/audit/export', [AuditController::class, 'export']);
 
         // Sesiones activas (tokens Sanctum)
         Route::get('/sessions', [SessionController::class, 'index']);
@@ -97,9 +98,11 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::get('/presence', [AdminPresenceController::class, 'index']);
         Route::get('/presence/monthly', [AdminPresenceController::class, 'monthly']);
         Route::get('/presence/export', [AdminPresenceController::class, 'export']);
+        Route::delete('/presence/consent/{user}', [AdminPresenceController::class, 'revokeConsent']);
 
         // Roles / grupos
         Route::get('/roles', [RoleController::class, 'index']);
+        Route::get('/roles/catalog', [RoleController::class, 'catalog']);
         Route::post('/roles', [RoleController::class, 'store']);
         Route::put('/roles/{role}', [RoleController::class, 'update']);
         Route::delete('/roles/{role}', [RoleController::class, 'destroy']);

@@ -3,9 +3,9 @@
 namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
-use App\Models\Application;
 use App\Models\Role;
 use App\Support\AuditLogger;
+use App\Support\SuitePermissions;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Str;
@@ -14,14 +14,22 @@ use Symfony\Component\HttpFoundation\Response;
 
 class RoleController extends Controller
 {
-    private function authorizeAdmin(Request $request): void
+    private function authorizeAdmin(Request $request, string ...$permissions): void
     {
-        abort_unless((bool) $request->user()->is_admin, Response::HTTP_FORBIDDEN, 'No autorizado');
+        $this->authorizeSuite($request, ...$permissions);
+    }
+
+    /** Catálogo de módulos/acciones de la Suite para el editor de grupos. */
+    public function catalog(Request $request): JsonResponse
+    {
+        $this->authorizeAdmin($request, 'roles');
+
+        return response()->json(['groups' => SuitePermissions::CATALOG, 'defaults' => SuitePermissions::DEFAULTS]);
     }
 
     public function index(Request $request): JsonResponse
     {
-        $this->authorizeAdmin($request);
+        $this->authorizeAdmin($request, 'roles', 'users');
 
         $roles = Role::query()
             ->withCount('users')
@@ -34,7 +42,7 @@ class RoleController extends Controller
 
     public function store(Request $request): JsonResponse
     {
-        $this->authorizeAdmin($request);
+        $this->authorizeAdmin($request, 'roles.create');
 
         $data = $this->validateData($request);
         $data['slug'] = $this->uniqueSlug($data['name']);
@@ -48,7 +56,8 @@ class RoleController extends Controller
 
     public function update(Request $request, Role $role): JsonResponse
     {
-        $this->authorizeAdmin($request);
+        $this->authorizeAdmin($request, 'roles.edit');
+        abort_if($role->is_admin && !$request->user()->hasFullSuiteAccess(), Response::HTTP_FORBIDDEN, 'Solo un administrador puede editar un grupo con acceso total');
 
         $data = $this->validateData($request);
         $role->update($data);
@@ -60,7 +69,9 @@ class RoleController extends Controller
 
     public function destroy(Request $request, Role $role): JsonResponse
     {
-        $this->authorizeAdmin($request);
+        $this->authorizeAdmin($request, 'roles.delete');
+        abort_if($role->isSystem(), Response::HTTP_UNPROCESSABLE_ENTITY, 'Los grupos del sistema no se pueden eliminar');
+        abort_if($role->is_admin && !$request->user()->hasFullSuiteAccess(), Response::HTTP_FORBIDDEN, 'Solo un administrador puede eliminar un grupo con acceso total');
 
         $name = $role->name;
         $role->delete();
@@ -77,27 +88,27 @@ class RoleController extends Controller
             'description' => 'nullable|string|max:255',
             'color' => 'nullable|string|max:20',
             'is_admin' => 'boolean',
-            'app_ids' => 'nullable|array',
-            'app_ids.*' => 'integer|exists:applications,id',
-            'abilities' => 'nullable|array',
+            'permissions' => 'nullable|array',
+            'permissions.*' => 'string|max:60',
         ]);
 
-        // Sanea las habilidades: { "<appId>": ["view", ...] } contra la lista permitida.
-        $abilities = [];
-        foreach ((array) ($validated['abilities'] ?? []) as $appId => $list) {
-            $clean = array_values(array_intersect((array) $list, Application::ABILITIES));
-            if ($clean) {
-                $abilities[(int) $appId] = $clean;
-            }
+        $actor = $request->user();
+        $isAdmin = (bool) ($validated['is_admin'] ?? false);
+        $permissions = SuitePermissions::normalize((array) ($validated['permissions'] ?? []));
+
+        // Nadie puede otorgar más de lo que él mismo tiene.
+        if (!$actor->hasFullSuiteAccess()) {
+            abort_if($isAdmin, Response::HTTP_FORBIDDEN, 'Solo un administrador puede crear grupos con acceso total');
+            $extra = array_diff($permissions, $actor->suitePermissions());
+            abort_if($extra !== [], Response::HTTP_FORBIDDEN, 'No puedes otorgar permisos que no tienes');
         }
 
         return [
             'name' => $validated['name'],
             'description' => $validated['description'] ?? null,
             'color' => $validated['color'] ?? null,
-            'is_admin' => $validated['is_admin'] ?? false,
-            'app_ids' => array_values($validated['app_ids'] ?? []),
-            'abilities' => $abilities ?: null,
+            'is_admin' => $isAdmin,
+            'permissions' => $isAdmin ? SuitePermissions::all() : $permissions,
         ];
     }
 
@@ -123,8 +134,10 @@ class RoleController extends Controller
             'description' => $role->description,
             'color' => $role->color,
             'is_admin' => (bool) $role->is_admin,
-            'app_ids' => $role->app_ids ?? [],
-            'abilities' => $role->abilities ?? (object) [],
+            'is_system' => $role->isSystem(),
+            'permissions' => $role->is_admin
+                ? SuitePermissions::all()
+                : SuitePermissions::normalize((array) ($role->permissions ?? [])),
             'users_count' => (int) ($role->users_count ?? 0),
         ];
     }

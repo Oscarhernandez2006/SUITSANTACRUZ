@@ -158,9 +158,12 @@
     padding: 0.15rem 0.45rem;
     border-radius: 999px;
 
-    &--admin { background: #E6F0FA; color: #2B6CB0; }
-    &--inactive { background: #FBE9E9; color: #C0392B; }
+    &--admin { background: var(--color-info-soft); color: var(--color-info); }
+    &--role { background: var(--color-success-soft); color: var(--color-accent); max-width: 110px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    &--inactive { background: var(--color-danger-soft); color: var(--color-danger); }
   }
+
+  &__chev { font-size: 18px; color: var(--color-text-muted); flex-shrink: 0; }
 }
 
 // ---- Panel de accesos ----
@@ -192,26 +195,73 @@
     align-items: center;
     justify-content: space-between;
     gap: 1rem;
-    padding-bottom: 1rem;
-    border-bottom: 1px solid #EAEFEC;
-    margin-bottom: 1.25rem;
+    margin-bottom: 1rem;
   }
 
-  &__user { display: flex; align-items: center; gap: 0.875rem; }
+  &__user { display: flex; align-items: center; gap: 1rem; }
 
   &__user-avatar {
     display: grid;
     place-items: center;
-    width: 48px;
-    height: 48px;
+    width: 60px;
+    height: 60px;
     border-radius: 50%;
-    background: var(--color-accent);
+    background: var(--gradient-forest);
     color: var(--color-white);
-    font-weight: 600;
+    font-size: 1.1rem;
+    font-weight: 800;
+    box-shadow: 0 8px 18px rgba(20, 53, 42, 0.25);
   }
 
-  &__user-name { margin: 0; font-size: 1.05rem; color: var(--color-text-primary); }
+  &__user-name { margin: 0; font-family: var(--font-heading); font-size: 1.25rem; font-weight: 800; color: var(--color-text-primary); }
   &__user-meta { font-size: 0.8rem; color: var(--color-text-muted); }
+  &__badges { display: flex; gap: 0.4rem; flex-wrap: wrap; margin: 0.3rem 0; }
+
+  &__stats {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    margin-bottom: 1rem;
+    border-radius: var(--radius-md);
+    border: 1px solid var(--color-border);
+    background: var(--color-canvas);
+  }
+
+  &__tabs {
+    display: flex;
+    align-items: center;
+    gap: 0.25rem;
+    margin-bottom: 1rem;
+    border-bottom: 1px solid var(--color-border);
+  }
+
+  &__app-search {
+    margin-left: auto;
+    margin-bottom: 0.4rem;
+    display: flex;
+    align-items: center;
+    gap: 0.4rem;
+    height: 36px;
+    padding: 0 0.7rem;
+    border-radius: var(--radius-md);
+    border: 1px solid var(--color-border);
+    color: var(--color-text-muted);
+
+    input { border: none; box-shadow: none !important; background: transparent; font-size: 0.84rem; }
+    .material-symbols-outlined { font-size: 18px; }
+  }
+
+  &__readonly {
+    display: flex;
+    align-items: center;
+    gap: 0.4rem;
+    margin: -0.25rem 0 0.9rem;
+    font-size: 0.8rem;
+    color: var(--color-text-muted);
+
+    .material-symbols-outlined { font-size: 17px; }
+  }
+
+  &__none { grid-column: 1 / -1; padding: 2rem; text-align: center; color: var(--color-text-muted); }
 
   &__counter {
     flex-shrink: 0;
@@ -246,6 +296,50 @@
 }
 
 // ---- Tarjeta de permiso ----
+.abadge {
+  display: inline-flex;
+  padding: 0.16rem 0.6rem;
+  border-radius: 999px;
+  font-size: 0.7rem;
+  font-weight: 700;
+  background: var(--color-success-soft);
+  color: var(--color-accent);
+
+  &--admin { background: var(--color-info-soft); color: var(--color-info); }
+  &--off { background: var(--color-danger-soft); color: var(--color-danger); }
+}
+
+.astat {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.9rem 1.1rem;
+
+  & + & { border-left: 1px solid var(--color-border); }
+  > .material-symbols-outlined { font-size: 28px; color: var(--color-accent); }
+  div { display: flex; flex-direction: column; }
+  strong { font-size: 1.2rem; font-weight: 800; color: var(--color-text-primary); small { font-size: 0.8rem; color: var(--color-text-muted); font-weight: 600; } }
+  span { font-size: 0.74rem; color: var(--color-text-muted); }
+}
+
+.atab {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  padding: 0.6rem 0.9rem;
+  border: none;
+  border-bottom: 2px solid transparent;
+  margin-bottom: -1px;
+  background: none;
+  font-size: 0.86rem;
+  font-weight: 700;
+  color: var(--color-text-muted);
+  cursor: pointer;
+
+  span { padding: 0.05rem 0.45rem; border-radius: 999px; font-size: 0.7rem; background: var(--color-surface); }
+  &--on { color: var(--color-accent); border-bottom-color: var(--color-accent); span { background: var(--color-success-soft); } }
+}
+
 .perm-card {
   display: flex;
   flex-direction: column;

@@ -60,7 +60,7 @@
 }
 
 <!-- Admin: modal crear/editar app -->
-@if (isAdmin && appModalOpen()) {
+@if (canManageApps && appModalOpen()) {
   <div class="app-modal-backdrop" (click)="closeAppModal()"></div>
   <div class="app-modal" role="dialog">
     <div class="app-modal__header">
@@ -202,7 +202,7 @@
     </div>
 
     <div class="app-modal__footer">
-      @if (appEditing()) {
+      @if (appEditing() && canDeleteApp) {
         <button class="btn btn--danger" (click)="askDeleteApp()" [disabled]="appSaving()">
           <span class="material-symbols-outlined">delete</span> Eliminar
         </button>
@@ -247,7 +247,7 @@
             <p class="page-head__subtitle">Herramientas disponibles para tu usuario</p>
           </div>
         </div>
-        @if (isAdmin) {
+        @if (canCreateApp) {
           <div class="page-head__actions">
             <button class="btn btn--primary" (click)="openCreateApp()">
               <span class="material-symbols-outlined">add</span>

@@ -4,6 +4,8 @@ namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
 use App\Models\PresenceDay;
+use App\Models\User;
+use App\Support\AuditLogger;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Carbon;
@@ -15,9 +17,9 @@ class PresenceController extends Controller
     /** Meta de horas de presencia por día laboral. */
     private const TARGET_DAILY_HOURS = 8;
 
-    private function authorizeAdmin(Request $request): void
+    private function authorizeAdmin(Request $request, string ...$permissions): void
     {
-        abort_unless((bool) $request->user()->is_admin, Response::HTTP_FORBIDDEN, 'No autorizado');
+        $this->authorizeSuite($request, ...$permissions);
     }
 
     /**
@@ -25,7 +27,7 @@ class PresenceController extends Controller
      */
     public function index(Request $request): JsonResponse
     {
-        $this->authorizeAdmin($request);
+        $this->authorizeAdmin($request, 'presence', 'sessions', 'stats');
 
         $from = $request->query('from', now()->toDateString());
         $to = $request->query('to', now()->toDateString());
@@ -75,7 +77,7 @@ class PresenceController extends Controller
      */
     public function export(Request $request): StreamedResponse
     {
-        $this->authorizeAdmin($request);
+        $this->authorizeAdmin($request, 'presence.export');
 
         $from = $request->query('from', now()->toDateString());
         $to = $request->query('to', now()->toDateString());
@@ -115,7 +117,7 @@ class PresenceController extends Controller
      */
     public function monthly(Request $request): JsonResponse
     {
-        $this->authorizeAdmin($request);
+        $this->authorizeAdmin($request, 'presence');
 
         $month = $request->query('month', now()->format('Y-m'));
         try {
@@ -123,10 +125,42 @@ class PresenceController extends Controller
         } catch (\Throwable $e) {
             $start = now()->startOfMonth();
         }
+
+        [$users, $summary] = $this->monthStats($start);
+        [, $previous] = $this->monthStats($start->copy()->subMonthNoOverflow());
+
+        return response()->json([
+            'month' => $start->format('Y-m'),
+            'target_daily_hours' => self::TARGET_DAILY_HOURS,
+            'summary' => $summary,
+            'previous_summary' => $previous,
+            'ranking' => $users,
+        ]);
+    }
+
+    /**
+     * Revoca el consentimiento de cámara: el usuario deberá aceptarlo de nuevo
+     * para volver a ser monitoreado.
+     */
+    public function revokeConsent(Request $request, User $user): JsonResponse
+    {
+        $this->authorizeAdmin($request, 'presence.revoke');
+
+        $user->presence_consent_at = null;
+        $user->save();
+
+        AuditLogger::record($request, 'presence.consent_revoked', 'user', $user->id, "Consentimiento de cámara revocado: {$user->name}");
+
+        return response()->json(['message' => 'Consentimiento revocado']);
+    }
+
+    /** Ranking y resumen de un mes. */
+    private function monthStats(Carbon $start): array
+    {
         $end = $start->copy()->endOfMonth();
 
         $rows = PresenceDay::query()
-            ->with('user:id,name,cedula')
+            ->with('user:id,name,cedula,role_id,presence_consent_at', 'user.role:id,name,color')
             ->whereBetween('date', [$start->toDateString(), $end->toDateString()])
             ->get();
 
@@ -163,6 +197,9 @@ class PresenceController extends Controller
                 'user_id' => $first->user_id,
                 'user' => $first->user->name ?? '—',
                 'cedula' => $first->user->cedula ?? null,
+                'role_name' => $first->user->role->name ?? null,
+                'role_color' => $first->user->role->color ?? null,
+                'has_consent' => (bool) $first->user?->presence_consent_at,
                 'days' => $days,
                 'present_hours' => $presentHours,
                 'target_hours' => round($target * $days, 1),
@@ -184,11 +221,6 @@ class PresenceController extends Controller
             'top_score' => $users->first()['score'] ?? null,
         ];
 
-        return response()->json([
-            'month' => $start->format('Y-m'),
-            'target_daily_hours' => $target,
-            'summary' => $summary,
-            'ranking' => $users,
-        ]);
+        return [$users, $summary];
     }
 }

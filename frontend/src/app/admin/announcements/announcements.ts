@@ -3,6 +3,7 @@ import { FormsModule } from '@angular/forms';
 import { DatePipe } from '@angular/common';
 import { Sidebar } from '../../shared/sidebar/sidebar';
 import { AdminService, AnnouncementItem } from '../../services/admin.service';
+import { AuthService } from '../../services/auth.service';
 
 type Form = { title: string; body: string; expires_at: string };
 
@@ -17,6 +18,8 @@ function emptyForm(): Form { return { title: '', body: '', expires_at: '' }; }
 })
 export class AnnouncementsAdmin implements OnInit {
   private svc = inject(AdminService);
+  private auth = inject(AuthService);
+  can(...perms: string[]): boolean { return this.auth.can(...perms); }
 
   readonly items = signal<AnnouncementItem[]>([]);
   readonly loading = signal(true);

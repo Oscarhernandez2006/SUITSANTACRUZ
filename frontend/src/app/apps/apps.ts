@@ -53,7 +53,10 @@ export class AppsPage implements OnInit {
   private http = inject(HttpClient);
 
   readonly user = this.authService.currentUser;
-  get isAdmin(): boolean { return !!this.user()?.is_admin; }
+  get canCreateApp(): boolean { return this.authService.can('apps.create'); }
+  get canEditApp(): boolean { return this.authService.can('apps.edit'); }
+  get canDeleteApp(): boolean { return this.authService.can('apps.delete'); }
+  get canManageApps(): boolean { return this.canCreateApp || this.canEditApp || this.canDeleteApp; }
 
   // ---- Apps ----
   readonly apps = signal<AppCardData[]>([]);
@@ -64,7 +67,7 @@ export class AppsPage implements OnInit {
   readonly filteredApps = computed(() => {
     const all = this.apps().map((a) => {
       if (a.slug === 'siesa') return this.decorateSiesaCard(a);
-      return this.isAdmin
+      return this.canEditApp
         ? { ...a, secondaryActionIcon: 'edit', secondaryActionLabel: 'Editar aplicación' }
         : a;
     });
@@ -105,7 +108,7 @@ export class AppsPage implements OnInit {
   ngOnInit(): void {
     this.authService.refreshUser();
     this.loadApplications();
-    if (this.isAdmin) this.loadManagedApps();
+    if (this.canManageApps) this.loadManagedApps();
   }
 
   private loadApplications(): void {
@@ -171,7 +174,7 @@ export class AppsPage implements OnInit {
 
   onCardSecondary(app: AppCardData): void {
     if (app.slug === 'siesa') { this.openSiesaModal(); return; }
-    if (this.isAdmin) {
+    if (this.canEditApp) {
       const managed = this.managedApps().find((m) => m.slug === app.slug);
       if (managed) this.openEditApp(managed);
     }

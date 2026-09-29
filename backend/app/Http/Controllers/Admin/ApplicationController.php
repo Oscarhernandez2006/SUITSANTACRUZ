@@ -15,9 +15,9 @@ class ApplicationController extends Controller
     /**
      * Ensure the authenticated user is an administrator.
      */
-    private function authorizeAdmin(Request $request): void
+    private function authorizeAdmin(Request $request, string ...$permissions): void
     {
-        abort_unless((bool) $request->user()->is_admin, Response::HTTP_FORBIDDEN, 'No autorizado');
+        $this->authorizeSuite($request, ...$permissions);
     }
 
     /**
@@ -25,7 +25,7 @@ class ApplicationController extends Controller
      */
     public function index(Request $request): JsonResponse
     {
-        $this->authorizeAdmin($request);
+        $this->authorizeAdmin($request, 'apps.create', 'apps.edit', 'apps.delete');
 
         $applications = Application::query()
             ->orderBy('sort_order')
@@ -40,7 +40,7 @@ class ApplicationController extends Controller
      */
     public function store(Request $request): JsonResponse
     {
-        $this->authorizeAdmin($request);
+        $this->authorizeAdmin($request, 'apps.create');
 
         $data = $this->validateData($request);
         $application = Application::create($data);
@@ -55,7 +55,7 @@ class ApplicationController extends Controller
      */
     public function update(Request $request, Application $application): JsonResponse
     {
-        $this->authorizeAdmin($request);
+        $this->authorizeAdmin($request, 'apps.edit');
 
         $data = $this->validateData($request, $application->id);
         $application->update($data);
@@ -70,7 +70,7 @@ class ApplicationController extends Controller
      */
     public function destroy(Request $request, Application $application): JsonResponse
     {
-        $this->authorizeAdmin($request);
+        $this->authorizeAdmin($request, 'apps.delete');
 
         $application->delete();
 

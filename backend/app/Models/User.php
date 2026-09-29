@@ -2,6 +2,8 @@
 
 namespace App\Models;
 
+use App\Support\SuitePermissions;
+
 // use Illuminate\Contracts\Auth\MustVerifyEmail;
 use Database\Factories\UserFactory;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
@@ -35,6 +37,28 @@ class User extends Authenticatable
     public function role(): BelongsTo
     {
         return $this->belongsTo(Role::class);
+    }
+
+    /** Acceso total a la Suite: admin directo o por su grupo. */
+    public function hasFullSuiteAccess(): bool
+    {
+        return (bool) $this->is_admin || (bool) $this->role?->is_admin;
+    }
+
+    /** Permisos efectivos sobre los módulos propios de la Suite. */
+    public function suitePermissions(): array
+    {
+        if ($this->hasFullSuiteAccess()) {
+            return SuitePermissions::all();
+        }
+
+        return SuitePermissions::normalize((array) ($this->role?->permissions ?? []));
+    }
+
+    /** ¿Tiene al menos uno de los permisos indicados? */
+    public function canSuite(string ...$permissions): bool
+    {
+        return (bool) array_intersect($permissions, $this->suitePermissions());
     }
 
     /**

@@ -9,7 +9,7 @@
         <div class="profile-page__avatar">{{ initials }}</div>
         <div>
           <h1 class="profile-page__name">{{ user()?.name }}</h1>
-          <span class="profile-page__role">{{ user()?.is_admin ? 'Administrador' : 'Usuario' }}</span>
+          <span class="profile-page__role">{{ user()?.role_name || (user()?.is_admin ? 'Administrador' : 'Usuario') }}</span>
         </div>
       </div>
 

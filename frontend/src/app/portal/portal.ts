@@ -78,7 +78,7 @@ export class Portal implements OnInit, OnDestroy {
     this.loadStats();
     this.loadHealth();
     this.presence.init();
-    if (this.isAdmin) this.loadManagedApps();
+    if (this.canManageApps) this.loadManagedApps();
     // Onboarding: mostrar solo la primera vez
     if (!localStorage.getItem('suite-onboarding-done')) {
       this.showOnboarding.set(true);
@@ -137,6 +137,13 @@ export class Portal implements OnInit, OnDestroy {
   get isAdmin(): boolean {
     return !!this.user()?.is_admin;
   }
+
+  get canAdminStats(): boolean { return this.authService.can('dashboard.stats'); }
+  get canGeneralStats(): boolean { return this.authService.can('stats'); }
+  get canCreateApp(): boolean { return this.authService.can('apps.create'); }
+  get canEditApp(): boolean { return this.authService.can('apps.edit'); }
+  get canDeleteApp(): boolean { return this.authService.can('apps.delete'); }
+  get canManageApps(): boolean { return this.canCreateApp || this.canEditApp || this.canDeleteApp; }
 
   goToPermissions(): void {
     this.userMenuOpen.set(false);
@@ -450,7 +457,7 @@ export class Portal implements OnInit, OnDestroy {
   filteredApps = computed(() => {
     const all = this.apps().map((a) => {
       if (a.slug === 'siesa') return this.decorateSiesaCard(a);
-      return this.isAdmin
+      return this.canEditApp
         ? { ...a, secondaryActionIcon: 'edit', secondaryActionLabel: 'Editar aplicación' }
         : a;
     });
@@ -477,7 +484,7 @@ export class Portal implements OnInit, OnDestroy {
   readonly healthLoading = signal<boolean>(false);
 
   loadHealth(): void {
-    if (!this.isAdmin) return;
+    if (!this.canAdminStats) return;
     this.healthLoading.set(true);
     this.adminService.getServicesHealth().subscribe({
       next: (res) => {
@@ -497,7 +504,7 @@ export class Portal implements OnInit, OnDestroy {
   }
 
   loadStats(): void {
-    if (!this.isAdmin) return;
+    if (!this.canAdminStats) return;
     this.statsLoading.set(true);
     this.statsError.set(false);
     this.statsService.getStats().subscribe({
@@ -744,7 +751,7 @@ export class Portal implements OnInit, OnDestroy {
       this.openSiesaModal();
       return;
     }
-    if (this.isAdmin) {
+    if (this.canEditApp) {
       const managed = this.managedApps().find((m) => m.slug === app.slug);
       if (managed) this.openEditApp(managed);
     }

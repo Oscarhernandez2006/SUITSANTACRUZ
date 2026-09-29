@@ -3,6 +3,7 @@ import { FormsModule } from '@angular/forms';
 import { Router } from '@angular/router';
 import { Sidebar } from '../../shared/sidebar/sidebar';
 import { AdminService, AdminUser, AppAccess, AppProvisioningCatalog, CatalogApplication } from '../../services/admin.service';
+import { AuthService } from '../../services/auth.service';
 
 /** Etiquetas legibles para cada habilidad granular. */
 const ABILITY_LABELS: Record<string, string> = {
@@ -23,6 +24,31 @@ const ABILITY_LABELS: Record<string, string> = {
 export class Permissions implements OnInit {
   private adminService = inject(AdminService);
   private router = inject(Router);
+  private auth = inject(AuthService);
+
+  readonly canEdit = this.auth.can('permissions.edit');
+  readonly canImport = this.auth.can('permissions.import');
+  readonly appTab = signal<'all' | 'granted'>('all');
+  readonly appSearch = signal('');
+
+  readonly visibleApps = computed(() => {
+    const q = this.appSearch().trim().toLowerCase();
+    const granted = this.granted();
+    return this.applications().filter((a) => {
+      if (this.appTab() === 'granted' && !granted.has(a.id)) return false;
+      return !q || a.name.toLowerCase().includes(q) || (a.category ?? '').toLowerCase().includes(q);
+    });
+  });
+
+  /** Apps concedidas que ya tienen un rol específico configurado en la app externa. */
+  readonly configuredCount = computed(() => {
+    const roles = this.appRoles();
+    return Array.from(this.granted().keys()).filter((id) => !!roles.get(id)).length;
+  });
+
+  readonly ssoCount = computed(() =>
+    this.applications().filter((a) => this.granted().has(a.id) && a.sso_enabled).length,
+  );
 
   readonly users = signal<AdminUser[]>([]);
   readonly applications = signal<CatalogApplication[]>([]);
@@ -346,6 +372,7 @@ export class Permissions implements OnInit {
   }
 
   toggleApp(appId: number): void {
+    if (!this.canEdit) return;
     const next = new Map(this.granted());
     if (next.has(appId)) {
       next.delete(appId);

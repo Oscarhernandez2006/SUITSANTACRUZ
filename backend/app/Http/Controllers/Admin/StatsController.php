@@ -17,7 +17,7 @@ class StatsController extends Controller
 {
     private function authorizeAdmin(Request $request): void
     {
-        abort_unless((bool) $request->user()->is_admin, Response::HTTP_FORBIDDEN, 'No autorizado');
+        $this->authorizeSuite($request, 'dashboard.stats', 'stats');
     }
 
     /**

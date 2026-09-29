@@ -1,10 +1,11 @@
 import { Component, ElementRef, OnInit, computed, inject, signal, viewChild } from '@angular/core';
 import { DatePipe } from '@angular/common';
 import { FormsModule } from '@angular/forms';
-import { Router } from '@angular/router';
+import { ActivatedRoute, Router } from '@angular/router';
 import { Sidebar } from '../../shared/sidebar/sidebar';
 import { AppAccessConfig, AppAccessSelection } from '../../shared/app-access-config/app-access-config';
 import { FaceService } from '../../services/face.service';
+import { AuthService } from '../../services/auth.service';
 import {
   AdminService,
   AppProvisioningCatalog,
@@ -58,6 +59,11 @@ export class UsersAdmin implements OnInit {
   private adminService = inject(AdminService);
   private faceService = inject(FaceService);
   private router = inject(Router);
+  private route = inject(ActivatedRoute);
+  private auth = inject(AuthService);
+
+  readonly fullAdmin = !!this.auth.currentUser()?.is_admin;
+  can(...perms: string[]): boolean { return this.auth.can(...perms); }
 
   readonly users = signal<ManagedUser[]>([]);
   readonly catalog = signal<CatalogApplication[]>([]);
@@ -96,8 +102,10 @@ export class UsersAdmin implements OnInit {
 
   readonly filteredUsers = computed(() => {
     const q = this.searchQuery().trim().toLowerCase();
-    if (!q) return this.users();
-    return this.users().filter(
+    const roleId = this.roleFilter();
+    const byRole = roleId ? this.users().filter((u) => u.role_id === roleId) : this.users();
+    if (!q) return byRole;
+    return byRole.filter(
       (u) =>
         u.name.toLowerCase().includes(q) ||
         u.cedula.toLowerCase().includes(q) ||
@@ -105,8 +113,19 @@ export class UsersAdmin implements OnInit {
     );
   });
 
+  /** Filtro por grupo (llega como ?grupo=ID desde la página de Grupos). */
+  readonly roleFilter = signal<number | null>(null);
+  readonly roleFilterName = computed(() => this.roles().find((r) => r.id === this.roleFilter())?.name ?? null);
+
   ngOnInit(): void {
+    const grupo = Number(this.route.snapshot.queryParamMap.get('grupo'));
+    if (grupo) this.roleFilter.set(grupo);
     this.load();
+  }
+
+  clearRoleFilter(): void {
+    this.roleFilter.set(null);
+    this.router.navigate([], { queryParams: {} });
   }
 
   private load(): void {

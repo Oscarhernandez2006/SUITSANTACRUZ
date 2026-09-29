@@ -37,3 +37,18 @@ export const adminGuard: CanActivateFn = () => {
   router.navigate(['/portal']);
   return false;
 };
+
+/** Exige el permiso de módulo indicado en `data.perm` (string o lista, basta uno). */
+export const permissionGuard: CanActivateFn = (route) => {
+  const auth = inject(AuthService);
+  const router = inject(Router);
+  const required = route.data?.['perm'] as string | string[] | undefined;
+  const perms = Array.isArray(required) ? required : required ? [required] : [];
+
+  if (auth.isAuthenticated() && (perms.length === 0 || auth.can(...perms))) {
+    return true;
+  }
+
+  router.navigate(['/portal']);
+  return false;
+};

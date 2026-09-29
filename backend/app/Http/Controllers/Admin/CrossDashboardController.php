@@ -22,9 +22,9 @@ class CrossDashboardController extends Controller
 
     public function __construct(private readonly ProvisioningClient $client) {}
 
-    private function authorizeAdmin(Request $request): void
+    private function authorizeAdmin(Request $request, string ...$permissions): void
     {
-        abort_unless((bool) $request->user()->is_admin, Response::HTTP_FORBIDDEN, 'No autorizado');
+        $this->authorizeSuite($request, ...($permissions ?: ['stats']));
     }
 
     private function resumenUrl(Application $app): ?string

@@ -67,6 +67,8 @@ export class TopNav implements OnInit, OnDestroy {
   }
 
   get isAdmin(): boolean { return !!this.user()?.is_admin; }
+  get roleLabel(): string { return this.user()?.role_name || (this.isAdmin ? 'Administrador' : 'Usuario'); }
+  get canPermissions(): boolean { return this.authService.can('permissions'); }
   get currentUserName(): string { return this.user()?.name ?? 'Usuario'; }
 
   get currentUserInitials(): string {

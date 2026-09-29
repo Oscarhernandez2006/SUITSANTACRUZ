@@ -1,4 +1,3 @@
-
 <div class="admin-shell">
   <app-sidebar></app-sidebar>
   <main class="admin-shell__main">
@@ -13,63 +12,174 @@
         </div>
       </div>
 
-      <sc-filter-bar>
-        <input class="filters__input" type="text" placeholder="Buscar por usuario..." [ngModel]="search()" (ngModelChange)="search.set($event)" />
-        <button class="btn btn--ghost" (click)="load()">
+      <!-- Indicadores -->
+      <section class="skpis">
+        <div class="skpi">
+          <span class="skpi__icon material-symbols-outlined">person</span>
+          <div class="skpi__body">
+            <span class="skpi__label">Sesiones activas</span>
+            <span class="skpi__value">{{ activeCount() }} <i class="skpi__dot skpi__dot--on"></i></span>
+            <span class="skpi__hint">{{ sessions().length }} abiertas en total</span>
+          </div>
+        </div>
+        <div class="skpi">
+          <span class="skpi__icon material-symbols-outlined">videocam</span>
+          <div class="skpi__body">
+            <span class="skpi__label">En cámara</span>
+            <span class="skpi__value">{{ cameraCount() }} <i class="skpi__dot skpi__dot--on"></i></span>
+            <span class="skpi__hint">frente al equipo ahora</span>
+          </div>
+        </div>
+        <div class="skpi">
+          <span class="skpi__icon material-symbols-outlined">pause_circle</span>
+          <div class="skpi__body">
+            <span class="skpi__label">Sin actividad</span>
+            <span class="skpi__value">{{ idleCount() }} <i class="skpi__dot"></i></span>
+            <span class="skpi__hint">más de 15 min sin uso</span>
+          </div>
+        </div>
+        <div class="skpi">
+          <span class="skpi__icon material-symbols-outlined">update</span>
+          <div class="skpi__body">
+            <span class="skpi__label">Última actualización</span>
+            <span class="skpi__value skpi__value--sm">{{ updatedAt() ? (updatedAt() | date:'h:mm:ss a') : '—' }}</span>
+            <span class="skpi__hint">{{ ago(updatedAt()) }} · cada 30 s</span>
+          </div>
+          @if (refreshing()) { <span class="skpi__live"></span> }
+        </div>
+      </section>
+
+      <!-- Filtros -->
+      <section class="sfilters">
+        <div class="sfilters__search">
+          <span class="material-symbols-outlined">search</span>
+          <input type="search" placeholder="Buscar por usuario o grupo..." [ngModel]="search()" (ngModelChange)="search.set($event)" />
+        </div>
+        <label class="sfilters__field">
+          <span>Estado</span>
+          <select [ngModel]="status()" (ngModelChange)="status.set($event)">
+            <option value="all">Todos</option>
+            <option value="active">Activas</option>
+            <option value="camera">En cámara</option>
+            <option value="idle">Sin actividad</option>
+          </select>
+        </label>
+        <label class="sfilters__field">
+          <span>Ordenar por</span>
+          <select [ngModel]="sort()" (ngModelChange)="sort.set($event)">
+            <option value="activity">Última actividad</option>
+            <option value="login">Inicio de sesión</option>
+            <option value="name">Nombre</option>
+          </select>
+        </label>
+        <button class="btn btn--outline" (click)="load()" [disabled]="loading()">
           <span class="material-symbols-outlined">refresh</span> Actualizar
         </button>
-      </sc-filter-bar>
+      </section>
 
-      @if (loading()) {
-        <div class="sc-loading"><span class="sc-spinner"></span><span>Cargando sesiones...</span></div>
-      } @else {
-        <div class="sess-summary">
-          <span class="sess-summary__item">
-            <span class="material-symbols-outlined">group</span>
-            <strong>{{ filtered().length }}</strong> sesiones activas
-          </span>
-          <span class="sess-summary__item sess-summary__item--cam">
-            <span class="material-symbols-outlined">videocam</span>
-            <strong>{{ onCameraCount() }}</strong> en cámara
-          </span>
-        </div>
+      <!-- Usuarios conectados -->
+      <section class="spanel">
+        <header class="spanel__head">
+          <h3><span class="material-symbols-outlined">person</span> Usuarios conectados</h3>
+          <span class="spanel__badge">{{ filtered().length }} {{ filtered().length === 1 ? 'sesión' : 'sesiones' }}</span>
+        </header>
 
-        <div class="sess-grid">
-          @for (s of filtered(); track s.id) {
-            <div class="scard" [class.scard--on]="onCamera(s.user_id)">
-              <span class="scard__pill" [class.scard__pill--on]="onCamera(s.user_id)">
-                <span class="material-symbols-outlined">{{ onCamera(s.user_id) ? 'videocam' : 'videocam_off' }}</span>
-                {{ onCamera(s.user_id) ? 'En cámara' : 'Ausente' }}
-              </span>
-
-              <div class="scard__avatar">
-                <span class="material-symbols-outlined">person</span>
-                @if (onCamera(s.user_id)) {
-                  <span class="scard__dot" title="Frente a la cámara"></span>
+        @if (loading()) {
+          <div class="sc-loading"><span class="sc-spinner"></span><span>Cargando sesiones...</span></div>
+        } @else {
+          <div class="stable-wrap">
+            <table class="stable">
+              <thead>
+                <tr>
+                  <th>Usuario</th><th>Estado</th><th>Dispositivo</th><th>IP</th>
+                  <th>Inicio de sesión</th><th>Última actividad</th><th>Cámara</th><th></th>
+                </tr>
+              </thead>
+              <tbody>
+                @for (s of filtered(); track s.id) {
+                  <tr>
+                    <td>
+                      <div class="suser">
+                        <span class="suser__avatar">{{ initials(s.user) }}</span>
+                        <div>
+                          <strong>{{ s.user || 'Usuario' }}</strong>
+                          <small>{{ s.role || 'Sin grupo' }}</small>
+                        </div>
+                      </div>
+                    </td>
+                    <td>
+                      <span class="spill" [class.spill--on]="isActive(s)">
+                        <i></i>{{ isActive(s) ? 'Activo' : 'Inactivo' }}
+                      </span>
+                    </td>
+                    <td>
+                      <span class="sdevice">
+                        <span class="material-symbols-outlined">{{ deviceIcon(s) }}</span>
+                        {{ s.os || '—' }} · {{ s.browser || '—' }}
+                      </span>
+                    </td>
+                    <td class="smono">{{ s.ip_address || '—' }}</td>
+                    <td class="smono">{{ s.created_at ? (s.created_at | date:'dd/MM HH:mm') : '—' }}</td>
+                    <td><span class="sago" [class.sago--on]="isActive(s)"><i></i>{{ ago(s.last_used_at) }}</span></td>
+                    <td>
+                      <span class="scam" [class.scam--on]="onCamera(s.user_id)">
+                        <span class="material-symbols-outlined">{{ onCamera(s.user_id) ? 'videocam' : 'videocam_off' }}</span>
+                        {{ onCamera(s.user_id) ? 'En cámara' : 'Ausente' }}
+                      </span>
+                    </td>
+                    <td class="sactions">
+                      @if (s.is_current) {
+                        <span class="scurrent">Esta sesión</span>
+                      } @else if (canRevoke) {
+                        <button class="srevoke" [disabled]="revoking() === s.id" (click)="revoke(s)">
+                          <span class="material-symbols-outlined">block</span>
+                          {{ revoking() === s.id ? 'Revocando...' : 'Revocar' }}
+                        </button>
+                      }
+                    </td>
+                  </tr>
+                } @empty {
+                  <tr>
+                    <td colspan="8">
+                      <div class="sempty">
+                        <span class="material-symbols-outlined">group_off</span>
+                        <strong>No se encontraron sesiones</strong>
+                        <small>Ajusta los filtros o busca por otro usuario.</small>
+                      </div>
+                    </td>
+                  </tr>
                 }
-              </div>
+              </tbody>
+            </table>
+          </div>
+        }
+      </section>
 
-              <div class="scard__name">{{ s.user || 'Usuario' }}</div>
-              <div class="scard__device">{{ s.name }}</div>
-
-              <div class="scard__meta">
-                <span class="material-symbols-outlined">schedule</span>
-                {{ s.last_used_at ? (s.last_used_at | date:'dd/MM HH:mm') : 'Sin actividad' }}
-              </div>
-
-              <button class="scard__revoke" [disabled]="revoking() === s.id" (click)="revoke(s)">
-                <span class="material-symbols-outlined">logout</span>
-                {{ revoking() === s.id ? '...' : 'Revocar' }}
-              </button>
+      <!-- Resumen de actividad -->
+      <section class="spanel">
+        <header class="spanel__head">
+          <h3><span class="material-symbols-outlined">monitoring</span> Resumen de actividad</h3>
+        </header>
+        <div class="ssummary">
+          <div class="ssummary__item"><span class="material-symbols-outlined">person</span><strong>{{ usersCount() }}</strong><small>usuarios conectados</small></div>
+          <div class="ssummary__item"><span class="material-symbols-outlined">videocam</span><strong>{{ cameraCount() }}</strong><small>sesiones con cámara</small></div>
+          <div class="ssummary__item"><span class="material-symbols-outlined">pause_circle</span><strong>{{ idleCount() }}</strong><small>sesiones inactivas</small></div>
+          <div class="ssummary__bar">
+            <span>Proporción activa</span>
+            <div class="ssummary__track">
+              <div class="ssummary__fill" [style.width.%]="sessions().length ? (activeCount() / sessions().length) * 100 : 0"></div>
             </div>
-          } @empty {
-            <div class="sess-empty">
-              <span class="material-symbols-outlined">devices_off</span>
-              <p>No hay sesiones activas</p>
-            </div>
-          }
+            <small>{{ activeCount() }} de {{ sessions().length }} sesiones con actividad en los últimos 15 min</small>
+          </div>
         </div>
-      }
+        @if (canRevoke) {
+          <p class="snote"><span class="material-symbols-outlined">info</span> Revocar una sesión desconecta inmediatamente el dispositivo del usuario; deberá iniciar sesión de nuevo.</p>
+        }
+      </section>
     </div>
   </main>
 </div>
+
+@if (toast()) {
+  <div class="toast"><span class="material-symbols-outlined toast__icon">info</span>{{ toast() }}</div>
+}

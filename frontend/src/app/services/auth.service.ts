@@ -1,5 +1,5 @@
 import { HttpClient } from '@angular/common/http';
-import { Injectable, signal } from '@angular/core';
+import { Injectable, computed, signal } from '@angular/core';
 import { Router } from '@angular/router';
 import { Observable } from 'rxjs';
 import { SiesaStatus } from './siesa.service';
@@ -10,6 +10,9 @@ export interface AuthUser {
   cedula: string;
   email: string;
   is_admin?: boolean;
+  role_name?: string | null;
+  /** Permisos sobre los módulos de la Suite: "modulo" o "modulo.accion". */
+  permissions?: string[];
 }
 
 interface LoginRequest {
@@ -56,7 +59,16 @@ export class AuthService {
   // Estado de credenciales Siesa: se hidrata en el login para no pedirlo aparte.
   siesaStatus = signal<SiesaStatus | null>(this.getStoredSiesa());
 
+  private readonly permissionSet = computed(() => new Set(this.currentUser()?.permissions ?? []));
+
   constructor(private http: HttpClient, private router: Router) {}
+
+  /** ¿El usuario tiene al menos uno de los permisos indicados? (el backend valida igual). */
+  can(...permissions: string[]): boolean {
+    if (this.currentUser()?.is_admin) return true;
+    const set = this.permissionSet();
+    return permissions.some((p) => set.has(p));
+  }
 
   login(cedula: string, password: string): Observable<LoginResponse> {
     return new Observable<LoginResponse>((observer) => {

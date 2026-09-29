@@ -1,0 +1,256 @@
+<div class="admin-shell">
+  <app-sidebar></app-sidebar>
+  <main class="admin-shell__main">
+    <div class="page">
+      <div class="page-head">
+        <div class="page-head__info">
+          <span class="material-symbols-outlined page-head__icon">shield_person</span>
+          <div>
+            <h1 class="page-head__title">Grupos de acceso</h1>
+            <p class="page-head__subtitle">Define a qué módulos de la Suite entra cada grupo y qué puede hacer en cada uno</p>
+          </div>
+        </div>
+        @if (canCreate) {
+          <div class="page-head__actions">
+            <button class="btn btn--primary" (click)="openCreate()">
+              <span class="material-symbols-outlined">add</span> Crear grupo
+            </button>
+          </div>
+        }
+      </div>
+
+      <div class="gtoolbar">
+        <div class="gtoolbar__search">
+          <span class="material-symbols-outlined">search</span>
+          <input type="search" placeholder="Buscar grupo..." [ngModel]="search()" (ngModelChange)="search.set($event)" />
+        </div>
+        <div class="gtoolbar__select">
+          <span class="material-symbols-outlined">filter_list</span>
+          <select [ngModel]="filter()" (ngModelChange)="filter.set($event)">
+            <option value="all">Todos los grupos</option>
+            <option value="full">Acceso total</option>
+            <option value="custom">Personalizados</option>
+            <option value="system">Del sistema</option>
+          </select>
+        </div>
+        <span class="gtoolbar__count">{{ filtered().length }} {{ filtered().length === 1 ? 'grupo' : 'grupos' }}</span>
+      </div>
+
+      @if (loading()) {
+        <div class="sc-loading"><span class="sc-spinner"></span><span>Cargando grupos...</span></div>
+      } @else if (!filtered().length) {
+        <div class="empty-state">
+          <span class="material-symbols-outlined empty-state__icon">groups</span>
+          <h3 class="empty-state__title">No hay grupos para mostrar</h3>
+          <p class="empty-state__text">Ajusta la búsqueda o crea un grupo nuevo.</p>
+        </div>
+      } @else {
+        <div class="ggrid">
+          @for (role of filtered(); track role.id) {
+            <article class="gcard" [style.--g-color]="role.color || '#2f8f4e'">
+              <header class="gcard__head">
+                <span class="gcard__avatar">
+                  <span class="material-symbols-outlined">{{ role.is_admin ? 'shield' : 'person' }}</span>
+                </span>
+                <div class="gcard__title">
+                  <h3>{{ role.name }}</h3>
+                  <div class="gcard__badges">
+                    <span class="gbadge" [class.gbadge--full]="role.is_admin">{{ role.is_admin ? 'Acceso total' : 'Personalizado' }}</span>
+                    @if (role.is_system) {
+                      <span class="gbadge gbadge--muted"><span class="material-symbols-outlined">lock</span> Grupo del sistema</span>
+                    }
+                  </div>
+                </div>
+              </header>
+
+              <p class="gcard__desc">{{ role.description || 'Sin descripción' }}</p>
+
+              <div class="gcard__stats">
+                <div class="gstat">
+                  <span class="material-symbols-outlined">grid_view</span>
+                  <div><strong>{{ moduleCount(role) }}<small> / {{ modules().length }}</small></strong><span>Módulos</span></div>
+                </div>
+                <div class="gstat">
+                  <span class="material-symbols-outlined">{{ role.is_admin ? 'lock_open' : 'tune' }}</span>
+                  <div><strong>{{ level(role).label }}</strong><span>{{ level(role).sub }}</span></div>
+                </div>
+                <div class="gstat">
+                  <span class="material-symbols-outlined">group</span>
+                  <div><strong>{{ role.users_count }}</strong><span>Usuarios</span></div>
+                </div>
+              </div>
+
+              <div class="gcard__section">
+                <h4>Módulos con acceso</h4>
+                <div class="gchips">
+                  @for (m of roleModules(role).slice(0, 6); track m.key) {
+                    <span class="gchip"><span class="material-symbols-outlined">{{ m.icon }}</span>{{ m.label }}</span>
+                  }
+                  @if (roleModules(role).length > 6) {
+                    <span class="gchip gchip--more">+{{ roleModules(role).length - 6 }}</span>
+                  }
+                </div>
+              </div>
+
+              <div class="gcard__section">
+                <h4>Acciones permitidas</h4>
+                <div class="gacts">
+                  <span class="gact gact--on"><span class="material-symbols-outlined">check_circle</span>Ver</span>
+                  @for (a of actionKinds(role); track a.key) {
+                    <span class="gact" [class.gact--on]="a.on">
+                      <span class="material-symbols-outlined">{{ a.on ? 'check_circle' : 'radio_button_unchecked' }}</span>{{ a.label }}
+                    </span>
+                  }
+                </div>
+              </div>
+
+              <footer class="gcard__foot">
+                <button class="gcard__link" (click)="viewUsers(role)">
+                  <span class="material-symbols-outlined">group</span> Ver usuarios
+                  <span class="material-symbols-outlined">chevron_right</span>
+                </button>
+                <div class="gcard__actions">
+                  @if (canEditRole(role)) {
+                    <button class="btn btn--secondary btn--sm" (click)="openEdit(role)">
+                      <span class="material-symbols-outlined">edit</span> Editar
+                    </button>
+                  }
+                  @if (canCreate || canDeleteRole(role)) {
+                    <div class="gcard__menu">
+                      <button class="icon-btn" title="Más acciones" (click)="menuOpen.set(menuOpen() === role.id ? null : role.id)">
+                        <span class="material-symbols-outlined">more_vert</span>
+                      </button>
+                      @if (menuOpen() === role.id) {
+                        <div class="gmenu">
+                          @if (canCreate) {
+                            <button (click)="menuOpen.set(null); duplicate(role)"><span class="material-symbols-outlined">content_copy</span> Duplicar</button>
+                          }
+                          @if (canDeleteRole(role)) {
+                            <button class="gmenu__danger" (click)="remove(role)"><span class="material-symbols-outlined">delete</span> Eliminar</button>
+                          }
+                        </div>
+                      }
+                    </div>
+                  }
+                </div>
+              </footer>
+            </article>
+          }
+        </div>
+      }
+    </div>
+  </main>
+</div>
+
+@if (toast()) {
+  <div class="toast"><span class="material-symbols-outlined toast__icon">info</span>{{ toast() }}</div>
+}
+
+<!-- Editor de grupo -->
+@if (modalOpen()) {
+  <div class="modal-overlay" (click)="closeModal()"></div>
+  <div class="modal modal--lg geditor" role="dialog">
+    <div class="modal__header">
+      <div>
+        <h2 class="modal__title">{{ editing() ? 'Editar grupo' : 'Nuevo grupo' }}</h2>
+        <p class="modal__subtitle">{{ enabledCount() }} de {{ modules().length }} módulos habilitados</p>
+      </div>
+      <button class="modal__close" (click)="closeModal()"><span class="material-symbols-outlined">close</span></button>
+    </div>
+
+    <div class="modal__body">
+      <div class="field-row">
+        <label class="field">
+          <span class="field__label">Nombre</span>
+          <input class="field__input" type="text" [ngModel]="fName()" (ngModelChange)="fName.set($event)" placeholder="Ej. Supervisores" />
+        </label>
+        <label class="field geditor__color">
+          <span class="field__label">Color</span>
+          <input type="color" [ngModel]="fColor()" (ngModelChange)="fColor.set($event)" />
+        </label>
+      </div>
+      <label class="field">
+        <span class="field__label">Descripción</span>
+        <input class="field__input" type="text" [ngModel]="fDescription()" (ngModelChange)="fDescription.set($event)" placeholder="Qué hace este grupo" />
+      </label>
+
+      @if (fullAdmin) {
+        <div class="gfull" [class.gfull--on]="fIsAdmin()">
+          <span class="material-symbols-outlined">shield</span>
+          <div>
+            <strong>Acceso total</strong>
+            <small>Entra a todos los módulos y puede realizar todas las acciones.</small>
+          </div>
+          <label class="sc-switch">
+            <input class="sc-switch__input" type="checkbox" [checked]="fIsAdmin()" (change)="fIsAdmin.set(!fIsAdmin())" />
+            <span class="sc-switch__track"><span class="sc-switch__thumb"></span></span>
+          </label>
+        </div>
+      }
+
+      <div class="geditor__bar">
+        <span>Módulos de la Suite</span>
+        @if (!fIsAdmin()) {
+          <div>
+            <button class="btn btn--ghost btn--sm" (click)="setAll(true)">Seleccionar todo</button>
+            <button class="btn btn--ghost btn--sm" (click)="setAll(false)">Quitar todo</button>
+          </div>
+        }
+      </div>
+
+      @for (group of catalog(); track group.group) {
+        <section class="gmod-group">
+          <h4>{{ group.group }}</h4>
+          @for (m of group.modules; track m.key) {
+            <div class="gmod" [class.gmod--on]="has(m.key)">
+              <div class="gmod__row">
+                <span class="gmod__icon material-symbols-outlined">{{ m.icon }}</span>
+                <div class="gmod__info">
+                  <strong>{{ m.label }}</strong>
+                  <small>{{ m.description }}</small>
+                </div>
+                @if (m.locked) {
+                  <span class="gmod__always">Siempre</span>
+                }
+                <label class="sc-switch" [title]="grantable(m.key) ? '' : 'No puedes otorgar un permiso que no tienes'">
+                  <input class="sc-switch__input" type="checkbox" [checked]="has(m.key)"
+                    [disabled]="m.locked || fIsAdmin() || !grantable(m.key)" (change)="toggleModule(m)" />
+                  <span class="sc-switch__track"><span class="sc-switch__thumb"></span></span>
+                </label>
+              </div>
+              @if (has(m.key)) {
+                <div class="gmod__actions">
+                  <span class="gmod__view"><span class="material-symbols-outlined">visibility</span> Ver (incluido)</span>
+                  @for (a of m.actions; track a.key) {
+                    <label class="gmod__action" [class.gmod__action--disabled]="fIsAdmin() || !grantable(m.key + '.' + a.key)">
+                      <span>{{ a.label }}</span>
+                      <span class="sc-switch sc-switch--sm">
+                        <input class="sc-switch__input" type="checkbox" [checked]="has(m.key + '.' + a.key)"
+                          [disabled]="fIsAdmin() || !grantable(m.key + '.' + a.key)" (change)="toggleAction(m, a.key)" />
+                        <span class="sc-switch__track"><span class="sc-switch__thumb"></span></span>
+                      </span>
+                    </label>
+                  } @empty {
+                    <span class="gmod__only-view">Módulo de solo consulta</span>
+                  }
+                </div>
+              }
+            </div>
+          }
+        </section>
+      }
+
+      @if (error()) {
+        <div class="gerror"><span class="material-symbols-outlined">error</span>{{ error() }}</div>
+      }
+    </div>
+
+    <div class="modal__footer">
+      <button class="btn btn--secondary" (click)="closeModal()" [disabled]="saving()">Cancelar</button>
+      <button class="btn btn--primary" [disabled]="!fName().trim() || saving()" (click)="save()">
+        <span class="material-symbols-outlined">save</span>
+        {{ saving() ? 'Guardando...' : 'Guardar grupo' }}
+      </button>
+    </div>
+  </div>
+}

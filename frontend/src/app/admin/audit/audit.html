@@ -11,6 +11,14 @@
             <p class="page-head__subtitle">Registro de acciones administrativas de la suite</p>
           </div>
         </div>
+        @if (canExport) {
+          <div class="page-head__actions">
+            <button class="btn btn--secondary" (click)="exportCsv()" [disabled]="exporting()">
+              <span class="material-symbols-outlined">download</span>
+              {{ exporting() ? 'Exportando...' : 'Exportar CSV' }}
+            </button>
+          </div>
+        }
       </div>
 
       <!-- Filtros -->

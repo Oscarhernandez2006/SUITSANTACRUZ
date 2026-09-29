@@ -24,9 +24,9 @@ class UserAccessController extends Controller
     /**
      * Ensure the authenticated user is an administrator.
      */
-    private function authorizeAdmin(Request $request): void
+    private function authorizeAdmin(Request $request, string ...$permissions): void
     {
-        abort_unless((bool) $request->user()->is_admin, Response::HTTP_FORBIDDEN, 'No autorizado');
+        $this->authorizeSuite($request, ...$permissions);
     }
 
     /**
@@ -34,11 +34,24 @@ class UserAccessController extends Controller
      */
     public function users(Request $request): JsonResponse
     {
-        $this->authorizeAdmin($request);
+        $this->authorizeAdmin($request, 'permissions');
 
         $users = User::query()
+            ->with('role:id,name,color')
+            ->withCount('applications')
             ->orderBy('name')
-            ->get(['id', 'name', 'cedula', 'email', 'is_active', 'is_admin']);
+            ->get(['id', 'name', 'cedula', 'email', 'is_active', 'is_admin', 'role_id'])
+            ->map(fn (User $u) => [
+                'id' => $u->id,
+                'name' => $u->name,
+                'cedula' => $u->cedula,
+                'email' => $u->email,
+                'is_active' => (bool) $u->is_active,
+                'is_admin' => (bool) $u->is_admin,
+                'role_name' => $u->role->name ?? null,
+                'role_color' => $u->role->color ?? null,
+                'applications_count' => (int) $u->applications_count,
+            ]);
 
         return response()->json($users);
     }
@@ -48,7 +61,7 @@ class UserAccessController extends Controller
      */
     public function applications(Request $request): JsonResponse
     {
-        $this->authorizeAdmin($request);
+        $this->authorizeAdmin($request, 'permissions', 'users');
 
         $applications = Application::query()
             ->orderBy('sort_order')
@@ -71,7 +84,7 @@ class UserAccessController extends Controller
      */
     public function show(Request $request, User $user): JsonResponse
     {
-        $this->authorizeAdmin($request);
+        $this->authorizeAdmin($request, 'permissions', 'users');
 
         $access = $user->applications()->get()->map(function ($app) {
             $perms = $this->decodeAppPermissions($app->pivot->app_permissions);
@@ -100,7 +113,7 @@ class UserAccessController extends Controller
      */
     public function catalog(Request $request, Application $application): JsonResponse
     {
-        $this->authorizeAdmin($request);
+        $this->authorizeAdmin($request, 'permissions', 'users');
 
         if (! $this->client->isProvisionable($application)) {
             return response()->json(['message' => 'La aplicación no admite aprovisionamiento'], Response::HTTP_BAD_REQUEST);
@@ -121,7 +134,7 @@ class UserAccessController extends Controller
      */
     public function import(Request $request): JsonResponse
     {
-        $this->authorizeAdmin($request);
+        $this->authorizeAdmin($request, 'permissions.import');
 
         $summary = $this->provisioner->importFromApps();
 
@@ -144,7 +157,7 @@ class UserAccessController extends Controller
      */
     public function refresh(Request $request, User $user): JsonResponse
     {
-        $this->authorizeAdmin($request);
+        $this->authorizeAdmin($request, 'permissions');
 
         $this->provisioner->refreshUserFromApps($user);
 
@@ -157,7 +170,7 @@ class UserAccessController extends Controller
      */
     public function update(Request $request, User $user): JsonResponse
     {
-        $this->authorizeAdmin($request);
+        $this->authorizeAdmin($request, 'permissions.edit');
 
         $validated = $request->validate([
             'application_ids' => 'sometimes|array',

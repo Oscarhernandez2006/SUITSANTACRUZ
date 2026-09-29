@@ -11,9 +11,9 @@ use Symfony\Component\HttpFoundation\Response;
 
 class AnnouncementController extends Controller
 {
-    private function authorizeAdmin(Request $request): void
+    private function authorizeAdmin(Request $request, string ...$permissions): void
     {
-        abort_unless((bool) $request->user()->is_admin, Response::HTTP_FORBIDDEN, 'No autorizado');
+        $this->authorizeSuite($request, ...$permissions);
     }
 
     // ---- Endpoint público (solo autenticado) ----
@@ -58,7 +58,7 @@ class AnnouncementController extends Controller
 
     public function index(Request $request): JsonResponse
     {
-        $this->authorizeAdmin($request);
+        $this->authorizeAdmin($request, 'announcements');
 
         $items = Announcement::with('publisher:id,name')
             ->orderByDesc('created_at')
@@ -77,7 +77,7 @@ class AnnouncementController extends Controller
 
     public function store(Request $request): JsonResponse
     {
-        $this->authorizeAdmin($request);
+        $this->authorizeAdmin($request, 'announcements.create');
 
         $validated = $request->validate([
             'title' => 'required|string|max:200',
@@ -104,7 +104,7 @@ class AnnouncementController extends Controller
 
     public function update(Request $request, Announcement $announcement): JsonResponse
     {
-        $this->authorizeAdmin($request);
+        $this->authorizeAdmin($request, 'announcements.edit');
 
         $validated = $request->validate([
             'title' => 'required|string|max:200',
@@ -119,7 +119,7 @@ class AnnouncementController extends Controller
 
     public function destroy(Request $request, Announcement $announcement): JsonResponse
     {
-        $this->authorizeAdmin($request);
+        $this->authorizeAdmin($request, 'announcements.delete');
         $announcement->delete();
 
         return response()->json(['ok' => true]);

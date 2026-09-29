@@ -1,19 +1,44 @@
-import { Component, OnInit, inject, signal } from '@angular/core';
-import { DatePipe } from '@angular/common';
+import { Component, HostListener, OnInit, computed, inject, signal } from '@angular/core';
+import { DatePipe, NgTemplateOutlet } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { Router } from '@angular/router';
 import { Sidebar } from '../../shared/sidebar/sidebar';
-import { AdminService, PresenceMonthly, PresenceReport } from '../../services/admin.service';
+import { AuthService } from '../../services/auth.service';
+import { AdminService, PresenceMonthly, PresenceRankingRow, PresenceReport, PresenceSummary } from '../../services/admin.service';
+
+export interface Delta { text: string; dir: 'up' | 'down' | 'flat'; }
 
 @Component({
   selector: 'app-presence-admin',
-  imports: [Sidebar, DatePipe, FormsModule],
+  imports: [Sidebar, DatePipe, FormsModule, NgTemplateOutlet],
   templateUrl: './presence.html',
   styleUrl: './presence.scss',
 })
 export class PresenceAdmin implements OnInit {
   private adminService = inject(AdminService);
   private router = inject(Router);
+  private auth = inject(AuthService);
+
+  readonly canExport = this.auth.can('presence.export');
+  readonly canRevoke = this.auth.can('presence.revoke');
+  readonly menuOpen = signal<number | null>(null);
+  readonly toast = signal('');
+  readonly rankSearch = signal('');
+  readonly userFilter = signal<number | null>(null);
+
+  readonly filteredRanking = computed(() => {
+    const q = this.rankSearch().trim().toLowerCase();
+    const rows = this.monthly()?.ranking ?? [];
+    return q ? rows.filter((u) => u.user.toLowerCase().includes(q) || (u.cedula ?? '').includes(q)) : rows;
+  });
+
+  /** Usuarios conocidos (del ranking) para el filtro del detalle diario. */
+  readonly knownUsers = computed(() => (this.monthly()?.ranking ?? []).map((u) => ({ id: u.user_id, name: u.user })));
+
+  @HostListener('document:click', ['$event'])
+  onDocClick(e: MouseEvent): void {
+    if (!(e.target as HTMLElement).closest('.rank__menu')) this.menuOpen.set(null);
+  }
 
   readonly view = signal<'mensual' | 'diario'>('mensual');
 
@@ -62,6 +87,50 @@ export class PresenceAdmin implements OnInit {
     return 'low';
   }
 
+  /** Diferencia contra el mes anterior para una métrica del resumen. */
+  delta(key: keyof PresenceSummary, kind: 'count' | 'hours' | 'pct'): Delta | null {
+    const m = this.monthly();
+    const prev = m?.previous_summary;
+    if (!m || !prev) return null;
+    const diff = Number(m.summary[key] ?? 0) - Number(prev[key] ?? 0);
+    const dir = diff > 0.001 ? 'up' : diff < -0.001 ? 'down' : 'flat';
+    const abs = Math.abs(diff);
+    const text = kind === 'hours' ? this.fmtHours(abs) : kind === 'pct' ? `${abs.toFixed(1)}%` : `${Math.round(abs)}`;
+    return { text, dir };
+  }
+
+  showDaily(u: PresenceRankingRow): void {
+    this.menuOpen.set(null);
+    const [y, m] = this.month().split('-').map(Number);
+    this.from.set(`${this.month()}-01`);
+    this.to.set(new Date(y, m, 0).toLocaleDateString('en-CA'));
+    this.userFilter.set(u.user_id);
+    this.view.set('diario');
+    this.load();
+  }
+
+  revokeConsent(u: PresenceRankingRow): void {
+    this.menuOpen.set(null);
+    if (!confirm(`¿Revocar el consentimiento de cámara de ${u.user}? Deberá aceptarlo de nuevo al ingresar para volver a ser monitoreado.`)) return;
+    this.adminService.revokePresenceConsent(u.user_id).subscribe({
+      next: () => {
+        this.showToast('Consentimiento revocado');
+        this.loadMonthly();
+      },
+      error: (err) => this.showToast(err?.error?.message || 'No se pudo revocar el consentimiento'),
+    });
+  }
+
+  exportMonth(): void {
+    const [y, m] = this.month().split('-').map(Number);
+    this.download(`${this.month()}-01`, new Date(y, m, 0).toLocaleDateString('en-CA'));
+  }
+
+  private showToast(msg: string): void {
+    this.toast.set(msg);
+    setTimeout(() => this.toast.set(''), 2500);
+  }
+
   initials(name: string): string {
     const parts = name.split(' ').filter((w) => w.length > 0);
     if (parts.length < 2) return parts.map((w) => w[0]).join('').substring(0, 2).toUpperCase();
@@ -71,7 +140,7 @@ export class PresenceAdmin implements OnInit {
   // ---- Diaria ----
   load(): void {
     this.loading.set(true);
-    this.adminService.getPresence(this.from(), this.to()).subscribe({
+    this.adminService.getPresence(this.from(), this.to(), this.userFilter() ?? undefined).subscribe({
       next: (r) => {
         this.report.set(r);
         this.loading.set(false);
@@ -81,13 +150,17 @@ export class PresenceAdmin implements OnInit {
   }
 
   exportCsv(): void {
+    this.download(this.from(), this.to());
+  }
+
+  private download(from: string, to: string): void {
     this.exporting.set(true);
-    this.adminService.exportPresence(this.from(), this.to()).subscribe({
+    this.adminService.exportPresence(from, to).subscribe({
       next: (blob) => {
         const url = URL.createObjectURL(blob);
         const a = document.createElement('a');
         a.href = url;
-        a.download = `presencia-${this.from()}_a_${this.to()}.csv`;
+        a.download = `presencia-${from}_a_${to}.csv`;
         a.click();
         URL.revokeObjectURL(url);
         this.exporting.set(false);

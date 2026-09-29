@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
+use App\Models\LoginLog;
 use App\Models\User;
 use App\Support\AuditLogger;
 use Illuminate\Http\JsonResponse;
@@ -12,9 +13,9 @@ use Symfony\Component\HttpFoundation\Response;
 
 class SessionController extends Controller
 {
-    private function authorizeAdmin(Request $request): void
+    private function authorizeAdmin(Request $request, string ...$permissions): void
     {
-        abort_unless((bool) $request->user()->is_admin, Response::HTTP_FORBIDDEN, 'No autorizado');
+        $this->authorizeSuite($request, ...$permissions);
     }
 
     /**
@@ -22,14 +23,31 @@ class SessionController extends Controller
      */
     public function index(Request $request): JsonResponse
     {
-        $this->authorizeAdmin($request);
+        $this->authorizeAdmin($request, 'sessions');
 
         $tokens = PersonalAccessToken::query()
-            ->with('tokenable:id,name,cedula')
+            ->with('tokenable:id,name,cedula,role_id,is_admin', 'tokenable.role:id,name')
             ->latest('last_used_at')
             ->latest('created_at')
-            ->get()
-            ->map(fn (PersonalAccessToken $token) => $this->present($token));
+            ->get();
+
+        // Último login exitoso por usuario para mostrar navegador/SO/IP.
+        $logins = LoginLog::query()
+            ->whereIn('user_id', $tokens->pluck('tokenable_id')->unique())
+            ->where('status', 'success')
+            ->orderByDesc('id')
+            ->get(['user_id', 'browser', 'os', 'device_type', 'ip_address'])
+            ->unique('user_id')
+            ->keyBy('user_id');
+
+        $tokens = $tokens->map(fn (PersonalAccessToken $token) => array_merge($this->present($token), [
+            'role' => $token->tokenable?->is_admin ? 'Administrador' : ($token->tokenable->role->name ?? null),
+            'browser' => $logins[$token->tokenable_id]->browser ?? null,
+            'os' => $logins[$token->tokenable_id]->os ?? null,
+            'device_type' => $logins[$token->tokenable_id]->device_type ?? null,
+            'ip_address' => $logins[$token->tokenable_id]->ip_address ?? null,
+            'is_current' => $token->id === ($request->user()->currentAccessToken()->id ?? null),
+        ]));
 
         return response()->json($tokens->values());
     }
@@ -39,7 +57,7 @@ class SessionController extends Controller
      */
     public function forUser(Request $request, User $user): JsonResponse
     {
-        $this->authorizeAdmin($request);
+        $this->authorizeAdmin($request, 'sessions', 'users');
 
         $tokens = $user->tokens()
             ->latest('last_used_at')
@@ -54,9 +72,10 @@ class SessionController extends Controller
      */
     public function revoke(Request $request, int $token): JsonResponse
     {
-        $this->authorizeAdmin($request);
+        $this->authorizeAdmin($request, 'sessions.revoke');
 
         $model = PersonalAccessToken::with('tokenable:id,name')->findOrFail($token);
+        abort_if($model->id === ($request->user()->currentAccessToken()->id ?? null), Response::HTTP_UNPROCESSABLE_ENTITY, 'No puedes revocar tu propia sesión actual');
         $ownerName = $model->tokenable->name ?? null;
         $model->delete();
 

@@ -49,9 +49,11 @@
           </div>
         </div>
         <div class="page-head__actions">
+          @if (can('announcements.create')) {
           <button class="btn btn--primary" (click)="openCreate()">
             <span class="material-symbols-outlined">add</span> Nuevo anuncio
           </button>
+          }
         </div>
       </div>
 
@@ -79,8 +81,12 @@
                 </span>
               </div>
               <div class="ann-row__actions">
+                @if (can('announcements.edit')) {
                 <button class="icon-btn" (click)="openEdit(item)" title="Editar"><span class="material-symbols-outlined">edit</span></button>
+                }
+                @if (can('announcements.delete')) {
                 <button class="icon-btn icon-btn--danger" (click)="delete(item)" title="Eliminar"><span class="material-symbols-outlined">delete</span></button>
+                }
               </div>
             </div>
           }

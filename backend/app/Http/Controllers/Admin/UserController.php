@@ -23,9 +23,22 @@ class UserController extends Controller
     /**
      * Ensure the authenticated user is an administrator.
      */
-    private function authorizeAdmin(Request $request): void
+    private function authorizeAdmin(Request $request, string ...$permissions): void
     {
-        abort_unless((bool) $request->user()->is_admin, Response::HTTP_FORBIDDEN, 'No autorizado');
+        $this->authorizeSuite($request, ...$permissions);
+    }
+
+    /** Quien no es administrador total no puede crear, tocar ni ascender administradores. */
+    private function guardEscalation(Request $request, ?User $target, array $validated = []): void
+    {
+        if ($request->user()->hasFullSuiteAccess()) {
+            return;
+        }
+        abort_if($target?->hasFullSuiteAccess(), Response::HTTP_FORBIDDEN, 'Solo un administrador puede modificar a otro administrador');
+        abort_if(!empty($validated['is_admin']), Response::HTTP_FORBIDDEN, 'Solo un administrador puede otorgar acceso total');
+        if (!empty($validated['role_id'])) {
+            abort_if((bool) Role::find($validated['role_id'])?->is_admin, Response::HTTP_FORBIDDEN, 'Solo un administrador puede asignar un grupo con acceso total');
+        }
     }
 
     /**
@@ -33,7 +46,7 @@ class UserController extends Controller
      */
     public function index(Request $request): JsonResponse
     {
-        $this->authorizeAdmin($request);
+        $this->authorizeAdmin($request, 'users');
 
         $siesaUserIds = SiesaCredential::query()->pluck('user_id')->all();
 
@@ -65,7 +78,7 @@ class UserController extends Controller
      */
     public function store(Request $request): JsonResponse
     {
-        $this->authorizeAdmin($request);
+        $this->authorizeAdmin($request, 'users.create');
 
         $validated = $request->validate([
             'name' => 'required|string|max:190',
@@ -88,6 +101,8 @@ class UserController extends Controller
             'siesa_password' => 'nullable|string|max:190',
             'siesa_domain' => 'nullable|string|max:190',
         ]);
+
+        $this->guardEscalation($request, null, $validated);
 
         $role = !empty($validated['role_id']) ? Role::find($validated['role_id']) : null;
 
@@ -142,7 +157,7 @@ class UserController extends Controller
      */
     public function update(Request $request, User $user): JsonResponse
     {
-        $this->authorizeAdmin($request);
+        $this->authorizeAdmin($request, 'users.edit');
 
         $validated = $request->validate([
             'name' => 'required|string|max:190',
@@ -165,6 +180,8 @@ class UserController extends Controller
             'siesa_password' => 'nullable|string|max:190',
             'siesa_domain' => 'nullable|string|max:190',
         ]);
+
+        $this->guardEscalation($request, $user, $validated);
 
         // Evita que un administrador se bloquee a sí mismo.
         if ($user->id === $request->user()->id) {
@@ -238,7 +255,8 @@ class UserController extends Controller
      */
     public function destroy(Request $request, User $user): JsonResponse
     {
-        $this->authorizeAdmin($request);
+        $this->authorizeAdmin($request, 'users.delete');
+        $this->guardEscalation($request, $user);
 
         if ($user->id === $request->user()->id) {
             abort(Response::HTTP_UNPROCESSABLE_ENTITY, 'No puedes eliminar tu propio usuario.');
@@ -262,7 +280,7 @@ class UserController extends Controller
      */
     public function enrollFace(Request $request, User $user): JsonResponse
     {
-        $this->authorizeAdmin($request);
+        $this->authorizeAdmin($request, 'users.face');
 
         $validated = $request->validate([
             'descriptors' => 'required|array|min:1|max:5',
@@ -284,7 +302,7 @@ class UserController extends Controller
      */
     public function removeFace(Request $request, User $user): JsonResponse
     {
-        $this->authorizeAdmin($request);
+        $this->authorizeAdmin($request, 'users.face');
 
         $user->face_descriptor = null;
         $user->face_enrolled_at = null;
@@ -301,7 +319,7 @@ class UserController extends Controller
      */
     public function grantFaceBypass(Request $request, User $user): JsonResponse
     {
-        $this->authorizeAdmin($request);
+        $this->authorizeAdmin($request, 'users.face');
 
         $validated = $request->validate([
             'minutes' => 'required|integer|min:5|max:10080',
@@ -320,7 +338,7 @@ class UserController extends Controller
      */
     public function revokeFaceBypass(Request $request, User $user): JsonResponse
     {
-        $this->authorizeAdmin($request);
+        $this->authorizeAdmin($request, 'users.face');
 
         $user->face_bypass_until = null;
         $user->save();

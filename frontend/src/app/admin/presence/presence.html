@@ -8,7 +8,7 @@
           <span class="material-symbols-outlined page-head__icon">timer</span>
           <div>
             <h1 class="page-head__title">Presencia</h1>
-            <p class="page-head__subtitle">Tiempo frente a cámara por usuario (meta 8h/día)</p>
+            <p class="page-head__subtitle">Controla el tiempo de trabajo y la asistencia de tu equipo (meta 8h/día)</p>
           </div>
         </div>
       </div>
@@ -33,9 +33,24 @@
             <button class="btn btn--primary" (click)="loadMonthly()">
               <span class="material-symbols-outlined">search</span> Consultar
             </button>
+            @if (canExport) {
+              <button class="btn btn--secondary" [disabled]="exporting()" (click)="exportMonth()">
+                <span class="material-symbols-outlined">download</span>
+                {{ exporting() ? 'Exportando...' : 'Exportar mes' }}
+              </button>
+            }
           </div>
         } @else {
           <div class="filters">
+            <label class="filters__field">
+              <span>Usuario</span>
+              <select class="filters__input" [ngModel]="userFilter()" (ngModelChange)="userFilter.set($event)">
+                <option [ngValue]="null">Todos</option>
+                @for (u of knownUsers(); track u.id) {
+                  <option [ngValue]="u.id">{{ u.name }}</option>
+                }
+              </select>
+            </label>
             <label class="filters__field">
               <span>Desde</span>
               <input class="filters__input" type="date" [value]="from()" (change)="from.set($any($event.target).value)" />
@@ -47,10 +62,12 @@
             <button class="btn btn--primary" (click)="load()">
               <span class="material-symbols-outlined">search</span> Consultar
             </button>
-            <button class="btn btn--ghost" [disabled]="exporting()" (click)="exportCsv()">
+            @if (canExport) {
+            <button class="btn btn--secondary" [disabled]="exporting()" (click)="exportCsv()">
               <span class="material-symbols-outlined">download</span>
               {{ exporting() ? 'Exportando...' : 'Exportar CSV' }}
             </button>
+            }
           </div>
         }
       </div>
@@ -62,11 +79,20 @@
           @if (m.ranking.length) {
             <!-- Estadísticas del equipo -->
             <div class="stat-cards">
+              <ng-template #deltaTpl let-d>
+                @if (d) {
+                  <span class="stat-card__delta stat-card__delta--{{ d.dir }}">
+                    <span class="material-symbols-outlined">{{ d.dir === 'up' ? 'arrow_upward' : d.dir === 'down' ? 'arrow_downward' : 'remove' }}</span>
+                    {{ d.text }} vs. mes anterior
+                  </span>
+                }
+              </ng-template>
               <div class="stat-card">
                 <span class="material-symbols-outlined stat-card__icon">group</span>
                 <div class="stat-card__body">
                   <span class="stat-card__value">{{ m.summary.users }}</span>
                   <span class="stat-card__label">Personas monitoreadas</span>
+                  <ng-container *ngTemplateOutlet="deltaTpl; context: { $implicit: delta('users', 'count') }" />
                 </div>
               </div>
               <div class="stat-card">
@@ -74,6 +100,7 @@
                 <div class="stat-card__body">
                   <span class="stat-card__value">{{ fmtHours(m.summary.avg_daily_hours) }}</span>
                   <span class="stat-card__label">Promedio/día · meta {{ m.target_daily_hours }}h</span>
+                  <ng-container *ngTemplateOutlet="deltaTpl; context: { $implicit: delta('avg_daily_hours', 'hours') }" />
                 </div>
               </div>
               <div class="stat-card">
@@ -81,6 +108,7 @@
                 <div class="stat-card__body">
                   <span class="stat-card__value">{{ m.summary.avg_compliance }}%</span>
                   <span class="stat-card__label">Cumplimiento promedio</span>
+                  <ng-container *ngTemplateOutlet="deltaTpl; context: { $implicit: delta('avg_compliance', 'pct') }" />
                 </div>
               </div>
               <div class="stat-card">
@@ -88,6 +116,7 @@
                 <div class="stat-card__body">
                   <span class="stat-card__value">{{ m.summary.avg_consistency }}%</span>
                   <span class="stat-card__label">Consistencia promedio</span>
+                  <ng-container *ngTemplateOutlet="deltaTpl; context: { $implicit: delta('avg_consistency', 'pct') }" />
                 </div>
               </div>
               <div class="stat-card">
@@ -95,26 +124,45 @@
                 <div class="stat-card__body">
                   <span class="stat-card__value">{{ fmtHours(m.summary.total_hours) }}</span>
                   <span class="stat-card__label">Horas totales del equipo</span>
+                  <ng-container *ngTemplateOutlet="deltaTpl; context: { $implicit: delta('total_hours', 'hours') }" />
                 </div>
               </div>
             </div>
 
             <!-- Ranking completo -->
             <section class="card">
-              <h3 class="card__title">Ranking de {{ monthLabel() }} · meta {{ m.target_daily_hours }}h/día</h3>
+              <div class="card__head">
+                <h3 class="card__title"><span class="material-symbols-outlined">emoji_events</span> Ranking de {{ monthLabel() }} · meta {{ m.target_daily_hours }}h/día</h3>
+                <div class="card__search">
+                  <span class="material-symbols-outlined">search</span>
+                  <input type="search" placeholder="Buscar persona..." [ngModel]="rankSearch()" (ngModelChange)="rankSearch.set($event)" />
+                </div>
+              </div>
               <table class="table rank">
                 <thead>
                   <tr>
                     <th>#</th><th>Usuario</th><th>Días</th><th>Horas</th><th>Prom/día</th>
-                    <th>Cumplimiento</th><th>Consistencia</th><th>Puntaje</th>
+                    <th>Cumplimiento</th><th>Consistencia</th><th>Puntaje</th><th></th>
                   </tr>
                 </thead>
                 <tbody>
-                  @for (u of m.ranking; track u.user_id; let i = $index) {
-                    <tr [class.rank__top]="i < 3">
+                  @for (u of filteredRanking(); track u.user_id; let i = $index) {
+                    <tr [class.rank__top]="i < 3 && !rankSearch()">
                       <td class="rank__pos">{{ i + 1 }}</td>
                       <td>
-                        <div class="rank__user"><span class="rank__avatar">{{ initials(u.user) }}</span>{{ u.user }}</div>
+                        <div class="rank__user">
+                          <span class="rank__avatar">{{ initials(u.user) }}</span>
+                          <div class="rank__who">
+                            <strong>{{ u.user }}</strong>
+                            <small>CC {{ u.cedula || '—' }}</small>
+                          </div>
+                          @if (u.role_name) {
+                            <span class="rank__tag" [style.--tag]="u.role_color || '#2f8f4e'">{{ u.role_name }}</span>
+                          }
+                          @if (!u.has_consent) {
+                            <span class="material-symbols-outlined rank__noconsent" title="Sin consentimiento de cámara vigente">videocam_off</span>
+                          }
+                        </div>
                       </td>
                       <td class="table__mono">{{ u.days }}</td>
                       <td class="table__mono">{{ fmtHours(u.present_hours) }}</td>
@@ -132,7 +180,24 @@
                         </div>
                       </td>
                       <td><span class="score-pill">{{ u.score }}</span></td>
+                      <td class="rank__actions">
+                        <div class="rank__menu">
+                          <button class="icon-btn" title="Acciones" (click)="menuOpen.set(menuOpen() === u.user_id ? null : u.user_id)">
+                            <span class="material-symbols-outlined">more_vert</span>
+                          </button>
+                          @if (menuOpen() === u.user_id) {
+                            <div class="rank__dropdown">
+                              <button (click)="showDaily(u)"><span class="material-symbols-outlined">calendar_view_day</span> Ver detalle diario</button>
+                              @if (canRevoke && u.has_consent) {
+                                <button class="rank__danger" (click)="revokeConsent(u)"><span class="material-symbols-outlined">videocam_off</span> Revocar consentimiento</button>
+                              }
+                            </div>
+                          }
+                        </div>
+                      </td>
                     </tr>
+                  } @empty {
+                    <tr><td colspan="9" class="table__empty">Sin coincidencias</td></tr>
                   }
                 </tbody>
               </table>
@@ -205,3 +270,7 @@
     </div>
   </main>
 </div>
+
+@if (toast()) {
+  <div class="toast"><span class="material-symbols-outlined toast__icon">info</span>{{ toast() }}</div>
+}

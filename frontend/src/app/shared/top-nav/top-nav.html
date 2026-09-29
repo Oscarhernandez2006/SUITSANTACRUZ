@@ -123,7 +123,7 @@
       <div class="tn__avatar">{{ currentUserInitials }}</div>
       <div class="tn__user-info">
         <span class="tn__user-name">{{ currentUserName }}</span>
-        <span class="tn__user-role">{{ isAdmin ? 'Administrador' : 'Usuario' }}</span>
+        <span class="tn__user-role">{{ roleLabel }}</span>
       </div>
       <span class="material-symbols-outlined tn__chevron" [class.tn__chevron--open]="userMenuOpen()">expand_more</span>
 
@@ -137,7 +137,7 @@
             <span class="material-symbols-outlined">history</span>
             Mi actividad
           </button>
-          @if (isAdmin) {
+          @if (canPermissions) {
             <button class="tn__dropdown-item" (click)="goToPermissions()">
               <span class="material-symbols-outlined">admin_panel_settings</span>
               Administrar permisos
