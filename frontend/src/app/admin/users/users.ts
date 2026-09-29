@@ -2,18 +2,20 @@ import { Component, ElementRef, OnInit, computed, inject, signal, viewChild } fr
 import { DatePipe } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { ActivatedRoute, Router } from '@angular/router';
+import { Observable, of, switchMap } from 'rxjs';
 import { Sidebar } from '../../shared/sidebar/sidebar';
-import { AppAccessConfig, AppAccessSelection } from '../../shared/app-access-config/app-access-config';
+import { UserAppAccess } from '../../shared/user-app-access/user-app-access';
 import { FaceService } from '../../services/face.service';
 import { AuthService } from '../../services/auth.service';
 import {
   AdminService,
-  AppProvisioningCatalog,
   CatalogApplication,
   ManagedUser,
   Role,
   UserPayload,
 } from '../../services/admin.service';
+
+type WizardStep = 'info' | 'siesa' | 'apps' | 'summary';
 
 interface UserFormModel {
   id: number | null;
@@ -24,9 +26,6 @@ interface UserFormModel {
   is_admin: boolean;
   is_active: boolean;
   role_id: number | null;
-  application_ids: number[];
-  appRoles: Record<number, string>;
-  appPerms: Record<number, string[]>;
   siesa_username: string;
   siesa_password: string;
 }
@@ -41,9 +40,6 @@ function emptyForm(): UserFormModel {
     is_admin: false,
     is_active: true,
     role_id: null,
-    application_ids: [],
-    appRoles: {},
-    appPerms: {},
     siesa_username: '',
     siesa_password: '',
   };
@@ -51,7 +47,7 @@ function emptyForm(): UserFormModel {
 
 @Component({
   selector: 'app-users-admin',
-  imports: [FormsModule, DatePipe, Sidebar, AppAccessConfig],
+  imports: [FormsModule, DatePipe, Sidebar, UserAppAccess],
   templateUrl: './users.html',
   styleUrl: './users.scss',
 })
@@ -68,11 +64,25 @@ export class UsersAdmin implements OnInit {
   readonly users = signal<ManagedUser[]>([]);
   readonly catalog = signal<CatalogApplication[]>([]);
   readonly roles = signal<Role[]>([]);
-  // Catálogo completo (roles + módulos) por app externa, cargado bajo demanda.
-  readonly appCatalogs = signal<Map<number, AppProvisioningCatalog>>(new Map());
-  readonly loadingCatalogs = signal<Set<number>>(new Set());
   readonly loading = signal(true);
   readonly saving = signal(false);
+  readonly importing = signal(false);
+
+  // ---- Asistente de usuario ----
+  readonly appAccess = viewChild(UserAppAccess);
+  readonly canSeeApps = this.auth.can('permissions');
+  readonly canEditApps = this.auth.can('permissions.edit');
+  readonly step = signal<WizardStep>('info');
+  readonly steps = computed(() => {
+    const list: { key: WizardStep; label: string; icon: string }[] = [
+      { key: 'info', label: 'Información', icon: 'badge' },
+      { key: 'siesa', label: 'Siesa', icon: 'cloud_sync' },
+    ];
+    if (this.canSeeApps) list.push({ key: 'apps', label: 'Aplicaciones', icon: 'apps' });
+    list.push({ key: 'summary', label: 'Resumen', icon: 'task_alt' });
+    return list;
+  });
+  readonly stepIndex = computed(() => this.steps().findIndex((s) => s.key === this.step()));
 
   readonly modalOpen = signal(false);
   readonly editing = signal(false);
@@ -189,6 +199,7 @@ export class UsersAdmin implements OnInit {
     this.formError.set('');
     this.showPassword.set(false);
     this.showSiesaPassword.set(false);
+    this.step.set('info');
     this.modalOpen.set(true);
   }
 
@@ -202,9 +213,6 @@ export class UsersAdmin implements OnInit {
       is_admin: user.is_admin,
       is_active: user.is_active,
       role_id: user.role_id,
-      application_ids: [...user.application_ids],
-      appRoles: {},
-      appPerms: {},
       siesa_username: '',
       siesa_password: '',
     });
@@ -212,6 +220,7 @@ export class UsersAdmin implements OnInit {
     this.formError.set('');
     this.showPassword.set(false);
     this.showSiesaPassword.set(false);
+    this.step.set('info');
     this.modalOpen.set(true);
   }
 
@@ -224,89 +233,57 @@ export class UsersAdmin implements OnInit {
     this.form.set({ ...this.form(), [key]: value });
   }
 
-  toggleApp(appId: number): void {
+  /** Valida el paso de información; devuelve el error o cadena vacía. */
+  private infoError(): string {
     const f = this.form();
-    const ids = f.application_ids.includes(appId)
-      ? f.application_ids.filter((id) => id !== appId)
-      : [...f.application_ids, appId];
-    this.form.set({ ...f, application_ids: ids });
-    const app = this.catalog().find((a) => a.id === appId);
-    if (app && this.isProvisionable(app) && ids.includes(appId)) {
-      this.ensureAppCatalog(appId);
+    if (!f.name.trim() || !f.cedula.trim()) return 'Nombre y cédula son obligatorios.';
+    const pwd = f.password.trim();
+    if (!this.editing() && pwd.length < 6) return 'La contraseña debe tener al menos 6 caracteres.';
+    if (this.editing() && pwd && pwd.length < 6) return 'La contraseña debe tener al menos 6 caracteres.';
+    return '';
+  }
+
+  goToStep(key: WizardStep): void {
+    const target = this.steps().findIndex((s) => s.key === key);
+    if (target > 0 && this.stepIndex() === 0) {
+      const err = this.infoError();
+      this.formError.set(err);
+      if (err) return;
     }
+    this.formError.set('');
+    this.step.set(key);
   }
 
-  hasApp(appId: number): boolean {
-    return this.form().application_ids.includes(appId);
+  nextStep(): void {
+    const next = this.steps()[this.stepIndex() + 1];
+    if (next) this.goToStep(next.key);
   }
 
-  /** ¿La app admite rol por aplicación (SIGCOM/SIGCOMPRO)? */
-  isProvisionable(app: CatalogApplication): boolean {
-    return app.provisionable === true || app.sso_enabled === true;
+  prevStep(): void {
+    const prev = this.steps()[this.stepIndex() - 1];
+    if (prev) this.goToStep(prev.key);
   }
 
-  /** Apps aprovisionables seleccionadas (para pedir el rol en el alta). */
-  readonly selectedProvisionableApps = computed(() =>
-    this.catalog().filter(
-      (a) => this.isProvisionable(a) && this.form().application_ids.includes(a.id),
-    ),
-  );
-
-  appRolesFor(appId: number): string[] {
-    return this.appCatalogs().get(appId)?.roles ?? [];
+  roleName(id: number | null): string {
+    return this.roles().find((r) => r.id === id)?.name ?? 'Sin grupo';
   }
 
-  /** Catálogo completo de la app (para el editor granular reutilizable). */
-  appCatalogFor(appId: number): AppProvisioningCatalog | null {
-    return this.appCatalogs().get(appId) ?? null;
-  }
-
-  isLoadingCatalog(appId: number): boolean {
-    return this.loadingCatalogs().has(appId);
-  }
-
-  /** Modelo de selección (rol + permisos) que consume el editor reutilizable. */
-  selectionFor(appId: number): AppAccessSelection {
-    const f = this.form();
-    return { role: f.appRoles[appId] ?? '', permissions: f.appPerms[appId] ?? [] };
-  }
-
-  onSelectionChange(appId: number, selection: AppAccessSelection): void {
-    const f = this.form();
-    this.form.set({
-      ...f,
-      appRoles: { ...f.appRoles, [appId]: selection.role },
-      appPerms: { ...f.appPerms, [appId]: selection.permissions },
-    });
-  }
-
-  getAppRole(appId: number): string {
-    return this.form().appRoles[appId] ?? '';
-  }
-
-  setAppRole(appId: number, role: string): void {
-    const f = this.form();
-    this.form.set({ ...f, appRoles: { ...f.appRoles, [appId]: role } });
-  }
-
-  private ensureAppCatalog(appId: number): void {
-    if (this.appCatalogs().has(appId) || this.loadingCatalogs().has(appId)) return;
-    this.loadingCatalogs.update((s) => new Set(s).add(appId));
-    this.adminService.getAppCatalog(appId).subscribe({
-      next: (cat) => {
-        this.appCatalogs.update((m) => new Map(m).set(appId, cat));
-        this.loadingCatalogs.update((s) => {
-          const next = new Set(s);
-          next.delete(appId);
-          return next;
-        });
+  /** Importa a la suite los usuarios/roles/permisos que ya existen en las apps externas. */
+  importFromApps(): void {
+    if (this.importing()) return;
+    this.importing.set(true);
+    this.adminService.importUsersFromApps().subscribe({
+      next: (res) => {
+        this.importing.set(false);
+        const parts = Object.entries(res.summary).map(([slug, s]) =>
+          s.error ? `${slug}: error` : `${slug}: +${s.created ?? 0} nuevos, ${s.linked ?? 0} vinculados`,
+        );
+        this.showToast(`Importado — ${parts.join(' · ')}`);
+        this.load();
       },
       error: () => {
-        this.loadingCatalogs.update((s) => {
-          const next = new Set(s);
-          next.delete(appId);
-          return next;
-        });
+        this.importing.set(false);
+        this.showToast('Error al importar desde las apps');
       },
     });
   }
@@ -323,16 +300,10 @@ export class UsersAdmin implements OnInit {
     if (this.saving()) return;
     const f = this.form();
 
-    if (!f.name.trim() || !f.cedula.trim()) {
-      this.formError.set('Nombre y cédula son obligatorios.');
-      return;
-    }
-    if (!this.editing() && f.password.trim().length < 6) {
-      this.formError.set('La contraseña debe tener al menos 6 caracteres.');
-      return;
-    }
-    if (this.editing() && f.password.trim() && f.password.trim().length < 6) {
-      this.formError.set('La contraseña debe tener al menos 6 caracteres.');
+    const err = this.infoError();
+    if (err) {
+      this.formError.set(err);
+      this.step.set('info');
       return;
     }
 
@@ -344,21 +315,10 @@ export class UsersAdmin implements OnInit {
       is_admin: f.is_admin,
       is_active: f.is_active,
       role_id: f.role_id,
-      application_ids: f.application_ids,
     };
     if (f.password.trim()) payload.password = f.password;
     if (f.siesa_username.trim()) payload.siesa_username = f.siesa_username.trim();
     if (f.siesa_password.trim()) payload.siesa_password = f.siesa_password;
-
-    // En el alta se define el rol por app: se envía app_access con el rol elegido
-    // para cada app habilitada (la edición de rol/módulos va en Permisos).
-    if (!this.editing()) {
-      payload.app_access = f.application_ids.map((application_id) => ({
-        application_id,
-        role: f.appRoles[application_id] || null,
-        permissions: f.appPerms[application_id] ?? [],
-      }));
-    }
 
     this.saving.set(true);
     this.formError.set('');
@@ -367,23 +327,30 @@ export class UsersAdmin implements OnInit {
       this.editing() && f.id
         ? this.adminService.updateUser(f.id, payload)
         : this.adminService.createUser(payload);
+    const access = this.appAccess();
 
-    request$.subscribe({
-      next: () => {
-        this.saving.set(false);
-        this.modalOpen.set(false);
-        this.showToast(this.editing() ? 'Usuario actualizado' : 'Usuario creado');
-        this.load();
-      },
-      error: (err) => {
-        this.saving.set(false);
-        const errors = err?.error?.errors;
-        const msg = errors
-          ? Object.values(errors).flat().join(' ')
-          : err?.error?.message || 'No se pudo guardar el usuario.';
-        this.formError.set(msg);
-      },
-    });
+    // Primero el usuario; luego sus accesos a apps (necesitan el id en un alta).
+    request$
+      .pipe(switchMap((user): Observable<unknown> => {
+        const id = f.id ?? (user as ManagedUser | null)?.id;
+        return access && id && this.canEditApps ? access.persist(id) : of(null);
+      }))
+      .subscribe({
+        next: () => {
+          this.saving.set(false);
+          this.modalOpen.set(false);
+          this.showToast(this.editing() ? 'Usuario actualizado' : 'Usuario creado');
+          this.load();
+        },
+        error: (err) => {
+          this.saving.set(false);
+          const errors = err?.error?.errors;
+          const msg = errors
+            ? Object.values(errors).flat().join(' ')
+            : err?.error?.message || 'No se pudo guardar el usuario.';
+          this.formError.set(msg);
+        },
+      });
   }
 
   askDelete(user: ManagedUser): void {

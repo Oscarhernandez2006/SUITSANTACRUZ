@@ -16,10 +16,16 @@
       <span class="material-symbols-outlined page-head__icon">group</span>
       <div>
         <h1 class="page-head__title">Gestión de usuarios</h1>
-        <p class="page-head__subtitle">Crea usuarios, define su rol y sus credenciales de Siesa</p>
+        <p class="page-head__subtitle">Crea usuarios, define su grupo, credenciales de Siesa y permisos en cada aplicación</p>
       </div>
     </div>
     <div class="page-head__actions">
+      @if (can('permissions.import')) {
+      <button class="btn btn--secondary" (click)="importFromApps()" [disabled]="importing()" title="Trae usuarios, roles y permisos que ya existen en las apps">
+        <span class="material-symbols-outlined">{{ importing() ? 'progress_activity' : 'download' }}</span>
+        {{ importing() ? 'Importando...' : 'Importar desde apps' }}
+      </button>
+      }
       @if (can('users.create')) {
       <button class="btn btn--primary" (click)="openCreate()">
         <span class="material-symbols-outlined">person_add</span>
@@ -200,142 +206,183 @@
   </main>
 </div>
 
-<!-- Modal crear/editar -->
+<!-- Asistente crear/editar -->
 @if (modalOpen()) {
   <div class="modal-overlay" (click)="closeModal()"></div>
-  <div class="modal">
+  <div class="modal wizard">
     <div class="modal__header">
-      <h2 class="modal__title">{{ editing() ? 'Editar usuario' : 'Nuevo usuario' }}</h2>
+      <div>
+        <h2 class="modal__title">{{ editing() ? 'Editar usuario' : 'Nuevo usuario' }}</h2>
+        <p class="modal__subtitle">{{ form().name || 'Completa los pasos y guarda al final' }}</p>
+      </div>
       <button class="modal__close" (click)="closeModal()">
         <span class="material-symbols-outlined">close</span>
       </button>
     </div>
 
-    <div class="modal__body">
-      <div class="field">
-        <label class="field__label">Nombre completo *</label>
-        <input class="field__input" type="text" [ngModel]="form().name" (ngModelChange)="updateField('name', $event)" placeholder="Ej: Juan Pérez" />
-      </div>
-
-      <div class="field-row">
-        <div class="field">
-          <label class="field__label">Cédula *</label>
-          <input class="field__input" type="text" [ngModel]="form().cedula" (ngModelChange)="updateField('cedula', $event)" placeholder="1234567890" />
-          <span class="field__hint">Se usa para iniciar sesión.</span>
-        </div>
-        <div class="field">
-          <label class="field__label">Correo electrónico</label>
-          <input class="field__input" type="email" [ngModel]="form().email" (ngModelChange)="updateField('email', $event)" placeholder="Opcional" />
-        </div>
-      </div>
-
-      <div class="field">
-        <label class="field__label">{{ editing() ? 'Nueva contraseña' : 'Contraseña *' }}</label>
-        <div class="input-wrap">
-          <input class="field__input" [type]="showPassword() ? 'text' : 'password'" [ngModel]="form().password" (ngModelChange)="updateField('password', $event)" autocomplete="new-password" [placeholder]="editing() ? 'Dejar vacío para no cambiar' : 'Mínimo 6 caracteres'" />
-          <button type="button" class="input-wrap__toggle" (click)="togglePassword()">
-            <span class="material-symbols-outlined">{{ showPassword() ? 'visibility_off' : 'visibility' }}</span>
-          </button>
-        </div>
-      </div>
-
-      <div class="divider">
-        <span class="material-symbols-outlined">cloud_sync</span>
-        Credenciales de Siesa
-      </div>
-      <p class="section-hint">
-        Se guardan cifradas y se usan para el inicio de sesión automático en Siesa.
-        @if (editing()) { Déjalas vacías para conservar las actuales. }
-      </p>
-
-      <div class="field-row">
-        <div class="field">
-          <label class="field__label">Usuario de Siesa</label>
-          <input class="field__input" type="text" autocomplete="off" [ngModel]="form().siesa_username" (ngModelChange)="updateField('siesa_username', $event)" placeholder="Usuario de Siesa" />
-        </div>
-        <div class="field">
-          <label class="field__label">Contraseña de Siesa</label>
-          <div class="input-wrap">
-            <input class="field__input" [type]="showSiesaPassword() ? 'text' : 'password'" autocomplete="new-password" [ngModel]="form().siesa_password" (ngModelChange)="updateField('siesa_password', $event)" placeholder="Contraseña de Siesa" />
-            <button type="button" class="input-wrap__toggle" (click)="toggleSiesaPassword()">
-              <span class="material-symbols-outlined">{{ showSiesaPassword() ? 'visibility_off' : 'visibility' }}</span>
-            </button>
-          </div>
-        </div>
-      </div>
-
-      <div class="divider">
-        <span class="material-symbols-outlined">tune</span>
-        Rol y acceso
-      </div>
-
-      <div class="field">
-        <label class="field__label">Grupo de acceso</label>
-        <select class="field__input" [ngModel]="form().role_id" (ngModelChange)="updateField('role_id', $event ? +$event : null)">
-          <option [ngValue]="null">Sin grupo</option>
-          @for (role of roles(); track role.id) {
-            @if (fullAdmin || !role.is_admin) {
-              <option [ngValue]="role.id">{{ role.name }}</option>
-            }
-          }
-        </select>
-      </div>
-
-      <div class="toggles">
-        @if (fullAdmin) {
-        <label class="toggle">
-          <input type="checkbox" [ngModel]="form().is_admin" (ngModelChange)="updateField('is_admin', $event)" />
-          <span class="toggle__box"></span>
-          <span class="toggle__text">
-            <strong>Administrador</strong>
-            <small>Acceso total a todos los módulos de la Suite.</small>
+    <nav class="wsteps">
+      @for (s of steps(); track s.key; let i = $index) {
+        <button type="button" class="wstep" [class.wstep--on]="step() === s.key" [class.wstep--done]="i < stepIndex()" (click)="goToStep(s.key)">
+          <span class="wstep__num">
+            @if (i < stepIndex()) { <span class="material-symbols-outlined">check</span> } @else { {{ i + 1 }} }
           </span>
-        </label>
-        }
-        <label class="toggle">
-          <input type="checkbox" [ngModel]="form().is_active" (ngModelChange)="updateField('is_active', $event)" />
-          <span class="toggle__box"></span>
-          <span class="toggle__text">
-            <strong>Activo</strong>
-            <small>Un usuario inactivo no puede iniciar sesión.</small>
+          <span class="wstep__label">
+            <small>Paso {{ i + 1 }}</small>
+            {{ s.label }}
           </span>
-        </label>
-      </div>
-
-      <div class="field">
-        <label class="field__label">Aplicaciones con acceso</label>
-        <div class="apps-grid">
-          @for (app of catalog(); track app.id) {
-            <label class="app-chip" [class.app-chip--on]="hasApp(app.id)">
-              <input type="checkbox" [checked]="hasApp(app.id)" (change)="toggleApp(app.id)" />
-              <span class="app-chip__icon" [style.color]="app.color || '#57AD31'">
-                <span class="material-symbols-outlined">{{ app.icon || 'apps' }}</span>
-              </span>
-              <span class="app-chip__name">{{ app.name }}</span>
-            </label>
-          } @empty {
-            <span class="field__hint">No hay aplicaciones en el catálogo.</span>
-          }
-        </div>
-      </div>
-
-      @if (!editing() && selectedProvisionableApps().length) {
-        <div class="field">
-          <label class="field__label">Rol y permisos por aplicación</label>
-          <div class="app-access-list">
-            @for (app of selectedProvisionableApps(); track app.id) {
-              <sc-app-access-config
-                [app]="app"
-                [catalog]="appCatalogFor(app.id)"
-                [loading]="isLoadingCatalog(app.id)"
-                [selection]="selectionFor(app.id)"
-                (selectionChange)="onSelectionChange(app.id, $event)"
-              />
-            }
-          </div>
-          <span class="field__hint">Ajusta el rol y activa los módulos finos; podrás editarlos luego en “Permisos”.</span>
-        </div>
+        </button>
+        @if (i < steps().length - 1) { <span class="wstep__line" [class.wstep__line--done]="i < stepIndex()"></span> }
       }
+    </nav>
+
+    <div class="modal__body wizard__body">
+      <!-- Paso 1: información -->
+      <section class="wpane" [hidden]="step() !== 'info'">
+        <div class="wpane__head">
+          <span class="material-symbols-outlined">badge</span>
+          <div><h3>Información del usuario</h3><p>Datos de acceso, grupo de la Suite y estado.</p></div>
+        </div>
+        <div class="field">
+          <label class="field__label">Nombre completo *</label>
+          <input class="field__input" type="text" [ngModel]="form().name" (ngModelChange)="updateField('name', $event)" placeholder="Ej: Juan Pérez" />
+        </div>
+        <div class="field-row">
+          <div class="field">
+            <label class="field__label">Cédula *</label>
+            <input class="field__input" type="text" [ngModel]="form().cedula" (ngModelChange)="updateField('cedula', $event)" placeholder="1234567890" />
+            <span class="field__hint">Se usa para iniciar sesión.</span>
+          </div>
+          <div class="field">
+            <label class="field__label">Correo electrónico</label>
+            <input class="field__input" type="email" [ngModel]="form().email" (ngModelChange)="updateField('email', $event)" placeholder="Opcional" />
+          </div>
+        </div>
+        <div class="field-row">
+          <div class="field">
+            <label class="field__label">{{ editing() ? 'Nueva contraseña' : 'Contraseña *' }}</label>
+            <div class="input-wrap">
+              <input class="field__input" [type]="showPassword() ? 'text' : 'password'" [ngModel]="form().password" (ngModelChange)="updateField('password', $event)" autocomplete="new-password" [placeholder]="editing() ? 'Dejar vacío para no cambiar' : 'Mínimo 6 caracteres'" />
+              <button type="button" class="input-wrap__toggle" (click)="togglePassword()">
+                <span class="material-symbols-outlined">{{ showPassword() ? 'visibility_off' : 'visibility' }}</span>
+              </button>
+            </div>
+          </div>
+          <div class="field">
+            <label class="field__label">Grupo de acceso</label>
+            <select class="field__input" [ngModel]="form().role_id" (ngModelChange)="updateField('role_id', $event ? +$event : null)">
+              <option [ngValue]="null">Sin grupo</option>
+              @for (role of roles(); track role.id) {
+                @if (fullAdmin || !role.is_admin) {
+                  <option [ngValue]="role.id">{{ role.name }}</option>
+                }
+              }
+            </select>
+            <span class="field__hint">Define a qué módulos de la Suite entra.</span>
+          </div>
+        </div>
+        <div class="toggles">
+          @if (fullAdmin) {
+          <label class="toggle">
+            <input type="checkbox" [ngModel]="form().is_admin" (ngModelChange)="updateField('is_admin', $event)" />
+            <span class="toggle__box"></span>
+            <span class="toggle__text">
+              <strong>Administrador</strong>
+              <small>Acceso total a todos los módulos de la Suite.</small>
+            </span>
+          </label>
+          }
+          <label class="toggle">
+            <input type="checkbox" [ngModel]="form().is_active" (ngModelChange)="updateField('is_active', $event)" />
+            <span class="toggle__box"></span>
+            <span class="toggle__text">
+              <strong>Activo</strong>
+              <small>Un usuario inactivo no puede iniciar sesión.</small>
+            </span>
+          </label>
+        </div>
+      </section>
+
+      <!-- Paso 2: Siesa -->
+      <section class="wpane" [hidden]="step() !== 'siesa'">
+        <div class="wpane__head">
+          <span class="material-symbols-outlined">cloud_sync</span>
+          <div>
+            <h3>Credenciales de Siesa</h3>
+            <p>Se guardan cifradas y se usan para el inicio de sesión automático en Siesa. Opcional.
+              @if (editing()) { Déjalas vacías para conservar las actuales. }</p>
+          </div>
+        </div>
+        <div class="field-row">
+          <div class="field">
+            <label class="field__label">Usuario de Siesa</label>
+            <input class="field__input" type="text" autocomplete="off" [ngModel]="form().siesa_username" (ngModelChange)="updateField('siesa_username', $event)" placeholder="Usuario de Siesa" />
+          </div>
+          <div class="field">
+            <label class="field__label">Contraseña de Siesa</label>
+            <div class="input-wrap">
+              <input class="field__input" [type]="showSiesaPassword() ? 'text' : 'password'" autocomplete="new-password" [ngModel]="form().siesa_password" (ngModelChange)="updateField('siesa_password', $event)" placeholder="Contraseña de Siesa" />
+              <button type="button" class="input-wrap__toggle" (click)="toggleSiesaPassword()">
+                <span class="material-symbols-outlined">{{ showSiesaPassword() ? 'visibility_off' : 'visibility' }}</span>
+              </button>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- Paso 3: aplicaciones (se mantiene montado para no perder los cambios) -->
+      @if (canSeeApps) {
+        <section class="wpane" [hidden]="step() !== 'apps'">
+          <div class="wpane__head">
+            <span class="material-symbols-outlined">apps</span>
+            <div><h3>Acceso a aplicaciones</h3><p>Activa las apps y administra el rol y los módulos en cada una.</p></div>
+          </div>
+          <app-user-app-access [userId]="form().id" [userName]="form().name" [readonly]="!canEditApps" />
+        </section>
+      }
+
+      <!-- Paso final: resumen -->
+      <section class="wpane" [hidden]="step() !== 'summary'">
+        <div class="wpane__head">
+          <span class="material-symbols-outlined">task_alt</span>
+          <div><h3>Revisa y guarda</h3><p>Confirma los datos antes de {{ editing() ? 'guardar los cambios' : 'crear el usuario' }}.</p></div>
+        </div>
+        <div class="wsummary">
+          <div class="wsummary__card">
+            <h4><span class="material-symbols-outlined">badge</span> Información <button type="button" (click)="goToStep('info')">Editar</button></h4>
+            <dl>
+              <dt>Nombre</dt><dd>{{ form().name || '—' }}</dd>
+              <dt>Cédula</dt><dd>{{ form().cedula || '—' }}</dd>
+              <dt>Correo</dt><dd>{{ form().email || '—' }}</dd>
+              <dt>Contraseña</dt><dd>{{ form().password ? 'Se establecerá una nueva' : (editing() ? 'Sin cambios' : '—') }}</dd>
+              <dt>Grupo</dt><dd>{{ roleName(form().role_id) }}</dd>
+              <dt>Estado</dt><dd>{{ form().is_active ? 'Activo' : 'Inactivo' }}{{ form().is_admin ? ' · Administrador' : '' }}</dd>
+            </dl>
+          </div>
+          <div class="wsummary__card">
+            <h4><span class="material-symbols-outlined">cloud_sync</span> Siesa <button type="button" (click)="goToStep('siesa')">Editar</button></h4>
+            <dl>
+              <dt>Usuario</dt><dd>{{ form().siesa_username || (editing() ? 'Sin cambios' : 'No configurado') }}</dd>
+              <dt>Contraseña</dt><dd>{{ form().siesa_password ? '••••••••' : (editing() ? 'Sin cambios' : '—') }}</dd>
+            </dl>
+          </div>
+          @if (canSeeApps && appAccess(); as acc) {
+            <div class="wsummary__card wsummary__card--wide">
+              <h4><span class="material-symbols-outlined">apps</span> Aplicaciones ({{ acc.grantedCount() }}) <button type="button" (click)="goToStep('apps')">Editar</button></h4>
+              <div class="wsummary__apps">
+                @for (app of acc.grantedApps(); track app.id) {
+                  <span class="wsummary__app">
+                    <span class="material-symbols-outlined" [style.color]="app.color || '#2f8f4e'">{{ app.icon || 'apps' }}</span>
+                    {{ app.name }}
+                    @if (acc.appRole(app.id)) { <small>· {{ acc.appRole(app.id) }}</small> }
+                  </span>
+                } @empty {
+                  <span class="field__hint">Sin aplicaciones asignadas.</span>
+                }
+              </div>
+            </div>
+          }
+        </div>
+      </section>
 
       @if (formError()) {
         <div class="form-error">
@@ -345,12 +392,21 @@
       }
     </div>
 
-    <div class="modal__footer">
-      <button class="btn btn--ghost" (click)="closeModal()" [disabled]="saving()">Cancelar</button>
-      <button class="btn btn--primary" (click)="save()" [disabled]="saving()">
-        <span class="material-symbols-outlined">{{ saving() ? 'progress_activity' : 'save' }}</span>
-        {{ saving() ? 'Guardando...' : (editing() ? 'Guardar cambios' : 'Crear usuario') }}
+    <div class="modal__footer wizard__footer">
+      <button class="btn btn--ghost" (click)="stepIndex() === 0 ? closeModal() : prevStep()" [disabled]="saving()">
+        @if (stepIndex() === 0) { Cancelar } @else { <span class="material-symbols-outlined">arrow_back</span> Atrás }
       </button>
+      <span class="wizard__progress">Paso {{ stepIndex() + 1 }} de {{ steps().length }}</span>
+      @if (stepIndex() < steps().length - 1) {
+        <button class="btn btn--primary" (click)="nextStep()">
+          Siguiente <span class="material-symbols-outlined">arrow_forward</span>
+        </button>
+      } @else {
+        <button class="btn btn--primary" (click)="save()" [disabled]="saving()">
+          <span class="material-symbols-outlined">{{ saving() ? 'progress_activity' : 'save' }}</span>
+          {{ saving() ? 'Guardando...' : (editing() ? 'Guardar cambios' : 'Crear usuario') }}
+        </button>
+      }
     </div>
   </div>
 }

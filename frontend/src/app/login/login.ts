@@ -30,6 +30,7 @@ export class Login implements OnInit, OnDestroy {
   readonly faceVideo = viewChild<ElementRef<HTMLVideoElement>>('faceVideo');
 
   activeSlide = signal(0);
+  activePhoto = signal(0);
   private intervalId: ReturnType<typeof setInterval> | null = null;
 
   // --- Recuperación de contraseña (paso "olvidé mi contraseña") ---
@@ -39,8 +40,12 @@ export class Login implements OnInit, OnDestroy {
   forgotError = signal('');
   forgotSent = signal(false);
 
-  /** Fotos reales de planta para el fondo del carrusel (public/login). */
-  readonly photos = [1, 2, 3, 4, 5, 6].map((n) => `login/planta-0${n}.jpg`);
+  /** Fotos de planta, tiendas y productos (carnessantacruz.co) para el carrusel (public/login). */
+  readonly photos = [
+    'planta-01', 'tienda-01', 'producto-01', 'planta-02', 'tienda-02', 'producto-02',
+    'planta-03', 'tienda-03', 'producto-03', 'planta-04', 'tienda-04', 'producto-04',
+    'planta-05', 'tienda-05', 'planta-06',
+  ].map((n) => `login/${n}.jpg`);
 
   readonly slides = [
     {
@@ -108,6 +113,7 @@ export class Login implements OnInit, OnDestroy {
   ngOnInit(): void {
     this.intervalId = setInterval(() => {
       this.activeSlide.update((i) => (i + 1) % this.slides.length);
+      this.activePhoto.update((i) => (i + 1) % this.photos.length);
     }, 7000);
   }
 

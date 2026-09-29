@@ -50,8 +50,8 @@ class SuitePermissions
                         ['key' => 'edit', 'label' => 'Editar grupos'],
                         ['key' => 'delete', 'label' => 'Eliminar grupos'],
                     ]],
-                ['key' => 'permissions', 'label' => 'Permisos', 'icon' => 'admin_panel_settings',
-                    'description' => 'Accesos de cada usuario a las aplicaciones externas.',
+                ['key' => 'permissions', 'label' => 'Permisos de apps', 'icon' => 'admin_panel_settings',
+                    'description' => 'Paso "Aplicaciones" al crear/editar usuarios: accesos, rol y módulos en cada app.',
                     'actions' => [
                         ['key' => 'edit', 'label' => 'Asignar y quitar accesos'],
                         ['key' => 'import', 'label' => 'Importar usuarios desde apps'],

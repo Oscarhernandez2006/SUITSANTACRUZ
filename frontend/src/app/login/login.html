@@ -5,7 +5,7 @@
       @for (photo of photos; track photo) {
         <div
           class="login__photo"
-          [class.login__photo--active]="activeSlide() % photos.length === $index"
+          [class.login__photo--active]="activePhoto() === $index"
           [style.background-image]="'url(' + photo + ')'"
         ></div>
       }
@@ -13,7 +13,6 @@
     </div>
 
     <header class="login__aside-top">
-      <span class="login__logo-chip"><img src="logo-scs.png" alt="" /></span>
       <div class="login__brand-text">
         <span class="login__brand-name">SantaCruz <span class="login__brand-accent">Suite</span></span>
         <span class="login__brand-sub">Grupo Santacruz</span>
@@ -64,7 +63,6 @@
     <div class="login__card">
       <div class="login__card-header">
         <div class="login__mobile-brand">
-          <span class="login__logo-chip login__logo-chip--light"><img src="logo-scs.png" alt="" /></span>
           <span class="login__mobile-brand-text">SantaCruz <span class="login__brand-accent">Suite</span></span>
         </div>
         <span class="login__kicker">Grupo Santacruz</span>

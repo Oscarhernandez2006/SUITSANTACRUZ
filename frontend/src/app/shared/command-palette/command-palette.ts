@@ -53,7 +53,6 @@ export class CommandPalette implements OnInit {
     const adminItems: (PaletteItem & { perm: string })[] = [
       { perm: 'users', icon: 'group', label: 'Usuarios', sub: 'Gestión de usuarios', action: nav('/admin/usuarios') },
       { perm: 'roles', icon: 'groups', label: 'Grupos', sub: 'Grupos de acceso', action: nav('/admin/roles') },
-      { perm: 'permissions', icon: 'admin_panel_settings', label: 'Permisos', sub: 'Accesos a aplicaciones', action: nav('/admin/permisos') },
       { perm: 'announcements', icon: 'campaign', label: 'Anuncios', sub: 'Comunicados internos', action: nav('/admin/anuncios') },
       { perm: 'stats', icon: 'monitoring', label: 'Estadísticas generales', sub: 'Indicadores de todas las apps', action: nav('/admin/estadisticas') },
       { perm: 'presence', icon: 'timer', label: 'Presencia', sub: 'Monitor de presencia', action: nav('/admin/presencia') },

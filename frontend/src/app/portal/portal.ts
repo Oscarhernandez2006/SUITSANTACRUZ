@@ -147,7 +147,7 @@ export class Portal implements OnInit, OnDestroy {
 
   goToPermissions(): void {
     this.userMenuOpen.set(false);
-    this.router.navigate(['/admin/permisos']);
+    this.router.navigate(['/admin/usuarios']);
   }
 
   goToAppsAdmin(): void {
@@ -386,7 +386,6 @@ export class Portal implements OnInit, OnDestroy {
     if (this.isAdmin) {
       links.push({ icon: 'group', label: 'Usuarios', view: 'inicio', route: '/admin/usuarios', adminOnly: true });
       links.push({ icon: 'groups', label: 'Grupos', view: 'inicio', route: '/admin/roles', adminOnly: true });
-      links.push({ icon: 'admin_panel_settings', label: 'Permisos', view: 'inicio', route: '/admin/permisos', adminOnly: true });
       links.push({ icon: 'history', label: 'Auditoría', view: 'inicio', route: '/admin/auditoria', adminOnly: true });
       links.push({ icon: 'devices', label: 'Sesiones', view: 'inicio', route: '/admin/sesiones', adminOnly: true });
       links.push({ icon: 'timer', label: 'Presencia', view: 'inicio', route: '/admin/presencia', adminOnly: true });

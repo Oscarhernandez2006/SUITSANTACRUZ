@@ -1,6 +1,7 @@
 import { Component, computed, inject } from '@angular/core';
 import { Router } from '@angular/router';
 import { AuthService } from '../../services/auth.service';
+import { LayoutService } from '../../services/layout.service';
 
 interface NavLink {
   icon: string;
@@ -20,10 +21,12 @@ interface NavGroup {
   imports: [],
   templateUrl: './sidebar.html',
   styleUrl: './sidebar.scss',
+  host: { '[class.is-collapsed]': 'layout.sidebarCollapsed()' },
 })
 export class Sidebar {
   private auth = inject(AuthService);
   private router = inject(Router);
+  readonly layout = inject(LayoutService);
 
   readonly groups = computed<NavGroup[]>(() => {
     this.auth.currentUser();
@@ -35,7 +38,6 @@ export class Sidebar {
         items: [
           { icon: 'group', label: 'Usuarios', route: '/admin/usuarios', perm: 'users' },
           { icon: 'groups', label: 'Grupos', route: '/admin/roles', perm: 'roles' },
-          { icon: 'admin_panel_settings', label: 'Permisos', route: '/admin/permisos', perm: 'permissions' },
           { icon: 'campaign', label: 'Anuncios', route: '/admin/anuncios', perm: 'announcements' },
         ],
       },

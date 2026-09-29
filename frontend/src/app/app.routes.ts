@@ -16,7 +16,7 @@ export const routes: Routes = [
       { path: 'mi-actividad', loadComponent: () => import('./activity/activity').then(m => m.ActivityPage), canActivate: [authGuard] },
       { path: 'siesa-launch', loadComponent: () => import('./siesa-launch/siesa-launch').then(m => m.SiesaLaunch), canActivate: [authGuard] },
       { path: 'admin/panel', loadComponent: () => import('./admin/dashboard/dashboard').then(m => m.Dashboard), canActivate: [permissionGuard], data: { perm: 'dashboard.stats' } },
-      { path: 'admin/permisos', loadComponent: () => import('./admin/permissions/permissions').then(m => m.Permissions), canActivate: [permissionGuard], data: { perm: 'permissions' } },
+      { path: 'admin/permisos', redirectTo: 'admin/usuarios' },
       { path: 'admin/usuarios', loadComponent: () => import('./admin/users/users').then(m => m.UsersAdmin), canActivate: [permissionGuard], data: { perm: 'users' } },
       { path: 'admin/roles', loadComponent: () => import('./admin/groups/groups').then(m => m.Groups), canActivate: [permissionGuard], data: { perm: 'roles' } },
       { path: 'admin/anuncios', loadComponent: () => import('./admin/announcements/announcements').then(m => m.AnnouncementsAdmin), canActivate: [permissionGuard], data: { perm: 'announcements' } },

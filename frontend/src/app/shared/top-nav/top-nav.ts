@@ -4,6 +4,7 @@ import { Router } from '@angular/router';
 import { AuthService } from '../../services/auth.service';
 import { PresenceService } from '../../services/presence.service';
 import { WeatherService } from '../../services/weather.service';
+import { LayoutService } from '../../services/layout.service';
 import { AdminService, NotificationItem } from '../../services/admin.service';
 import { CommandPalette } from '../command-palette/command-palette';
 
@@ -20,6 +21,7 @@ export class TopNav implements OnInit, OnDestroy {
   private router = inject(Router);
   readonly presence = inject(PresenceService);
   readonly weather = inject(WeatherService);
+  readonly layout = inject(LayoutService);
 
   private clockInterval: ReturnType<typeof setInterval> | null = null;
   private notifInterval: ReturnType<typeof setInterval> | null = null;
@@ -68,7 +70,7 @@ export class TopNav implements OnInit, OnDestroy {
 
   get isAdmin(): boolean { return !!this.user()?.is_admin; }
   get roleLabel(): string { return this.user()?.role_name || (this.isAdmin ? 'Administrador' : 'Usuario'); }
-  get canPermissions(): boolean { return this.authService.can('permissions'); }
+  get canUsers(): boolean { return this.authService.can('users'); }
   get currentUserName(): string { return this.user()?.name ?? 'Usuario'; }
 
   get currentUserInitials(): string {
@@ -91,7 +93,7 @@ export class TopNav implements OnInit, OnDestroy {
 
   goToPermissions(): void {
     this.userMenuOpen.set(false);
-    this.router.navigate(['/admin/permisos']);
+    this.router.navigate(['/admin/usuarios']);
   }
 
   logout(): void {

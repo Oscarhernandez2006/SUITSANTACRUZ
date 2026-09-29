@@ -349,7 +349,7 @@ export interface UserPayload {
   is_admin: boolean;
   is_active: boolean;
   role_id?: number | null;
-  application_ids: number[];
+  application_ids?: number[];
   app_access?: {
     application_id: number;
     role?: string | null;

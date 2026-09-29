@@ -1,11 +1,15 @@
 <header class="tn">
-  <button class="tn__brand" (click)="goHome()" title="Ir al inicio">
-    <span class="tn__logo"><img src="logo-scs.png" alt="" /></span>
-    <span class="tn__brand-text">
-      <span class="tn__name">SantaCruz <span class="tn__name-accent">Suite</span></span>
-      <span class="tn__brand-sub">Grupo Santacruz</span>
-    </span>
-  </button>
+  <div class="tn__left">
+    <button class="tn__burger" (click)="layout.toggleSidebar()" [title]="layout.sidebarCollapsed() ? 'Expandir menú' : 'Contraer menú'" aria-label="Menú">
+      <span class="material-symbols-outlined">menu</span>
+    </button>
+    <button class="tn__brand" (click)="goHome()" title="Ir al inicio">
+      <span class="tn__brand-text">
+        <span class="tn__name">SantaCruz <span class="tn__name-accent">Suite</span></span>
+        <span class="tn__brand-sub">Grupo Santacruz</span>
+      </span>
+    </button>
+  </div>
 
   <div class="tn__right">
     <!-- Indicador de monitoreo de presencia -->
@@ -137,10 +141,10 @@
             <span class="material-symbols-outlined">history</span>
             Mi actividad
           </button>
-          @if (canPermissions) {
+          @if (canUsers) {
             <button class="tn__dropdown-item" (click)="goToPermissions()">
-              <span class="material-symbols-outlined">admin_panel_settings</span>
-              Administrar permisos
+              <span class="material-symbols-outlined">manage_accounts</span>
+              Usuarios y permisos
             </button>
           }
           <button class="tn__dropdown-item tn__dropdown-item--danger" (click)="logout()">
